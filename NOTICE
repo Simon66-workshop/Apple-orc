@@ -1,0 +1,7 @@
+Apple Orc includes rendering code, WGSL/Metal shaders, presets, and
+parameter maps derived from LerSent001/orb (MIT License).
+
+https://github.com/LerSent001/orb
+
+The original copyright notice is in public/THIRD_PARTY_ORB_LICENSE.txt.
+The workbench chrome uses the 66X glass UI kit.
