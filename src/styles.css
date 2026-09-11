@@ -17,11 +17,14 @@
   html,
   body,
   #root {
-    min-height: 100dvh;
+    height: 100%;
+    max-width: 100%;
+    overflow: hidden;
     background: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-sans);
   }
+
 
   button:not(:disabled),
   [role="button"]:not(:disabled) {
@@ -37,11 +40,13 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr) minmax(0, 340px);
   gap: 14px;
-  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  height: 100dvh;
   padding: 14px;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .orc-bg {
@@ -58,11 +63,16 @@
 
 .orc-rail,
 .orc-stage {
+  min-width: 0;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .orc-panel {
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -71,8 +81,10 @@
 .orc-panel > .type-legible {
   height: 100%;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .orc-panel-title {
@@ -98,6 +110,9 @@
   overflow: auto;
   padding-right: 4px;
   min-height: 0;
+  min-width: 0;
+  flex: 1;
+  overscroll-behavior: contain;
 }
 
 .orc-preset {
@@ -137,8 +152,9 @@
   position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  place-items: center;
-  min-height: 420px;
+  justify-items: stretch;
+  align-items: center;
+  min-height: 0;
   gap: 8px;
 }
 
@@ -159,12 +175,16 @@
 
 .orc-stage-bottom {
   padding-bottom: 4px;
+  justify-self: center;
 }
 
 .orc-preview {
   width: min(58vmin, 480px);
   height: min(58vmin, 480px);
+  max-width: 100%;
   transform-origin: center;
+  justify-self: center;
+  align-self: center;
 }
 
 .orc-fallback-note {
@@ -173,6 +193,7 @@
   text-align: center;
   font-size: 0.68rem;
   color: rgb(255 255 255 / 0.42);
+  justify-self: center;
 }
 
 .orc-preview.is-scene {
@@ -282,7 +303,11 @@
   gap: 4px;
   overflow: auto;
   min-height: 0;
+  min-width: 0;
+  flex: 1;
   padding-right: 4px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .orc-section {
@@ -295,6 +320,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 40px;
   padding: 8px 2px;
   color: rgb(255 255 255 / 0.82);
   font-size: 0.72rem;
@@ -345,16 +371,25 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: 22px;
+  width: 100%;
+  height: 28px;
   user-select: none;
+  touch-action: none;
+  cursor: pointer;
 }
 
 .orc-slider-track {
   position: relative;
   flex: 1;
-  height: 3px;
+  height: 4px;
   background: rgb(255 255 255 / 0.16);
   border-radius: 999px;
+}
+
+.orc-slider-track::before {
+  content: "";
+  position: absolute;
+  inset: -12px 0;
 }
 
 .orc-slider-range {
@@ -366,11 +401,13 @@
 
 .orc-slider-thumb {
   display: block;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+  cursor: grab;
+  touch-action: none;
 }
 
 .orc-swatch-grid {
@@ -416,11 +453,15 @@
   border-radius: 999px;
   background: rgb(8 6 18 / 0.45);
   border: 1px solid rgb(255 255 255 / 0.18);
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .orc-segment {
   flex: 1;
-  height: 32px;
+  height: 36px;
+  min-width: 44px;
+  padding: 0 12px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -600,8 +641,8 @@
 
 @media (max-width: 980px) {
   .orc-app {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(320px, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
     padding: 10px;
     height: 100dvh;
   }
@@ -609,11 +650,20 @@
   .orc-rail-left,
   .orc-rail-right {
     height: auto;
+    max-height: none;
     min-height: 0;
   }
 
+  .orc-rail-left {
+    max-height: 26dvh;
+  }
+
+  .orc-rail-right {
+    max-height: 40dvh;
+  }
+
   .orc-panel {
-    height: auto;
+    height: 100%;
     max-height: none;
   }
 
@@ -623,6 +673,7 @@
     overflow-y: hidden;
     gap: 8px;
     padding-bottom: 4px;
+    flex: 1;
   }
 
   .orc-preset {
@@ -630,7 +681,7 @@
   }
 
   .orc-controls {
-    max-height: 38dvh;
+    max-height: none;
   }
 
   .orc-stage {
@@ -638,8 +689,8 @@
   }
 
   .orc-preview {
-    width: min(62vw, 280px);
-    height: min(62vw, 280px);
+    width: min(52vw, 240px);
+    height: min(52vw, 240px);
   }
 
   .orc-sheet-actions {

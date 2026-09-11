@@ -224,12 +224,11 @@ export function Workbench() {
       <aside className="orc-rail orc-rail-left">
         <GlassCard sheen={false} radius="1.5rem" padding="0.9rem" className="orc-panel">
           <div className="orc-panel-title">{copy.presets}</div>
-          <div className="orc-preset-grid" role="list">
+          <div className="orc-preset-grid">
             {styleNames.map((style) => (
               <button
                 key={style}
                 type="button"
-                role="listitem"
                 aria-pressed={params.style === style}
                 className={cn("orc-preset", params.style === style && "is-active")}
                 onClick={() => applyStyle(style)}

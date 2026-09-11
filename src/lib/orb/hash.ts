@@ -213,5 +213,9 @@ export function writeHash(
   sceneText: string,
 ): void {
   if (!isBrowser()) return;
-  window.history.replaceState(null, "", `#${buildShareHash(editorState, previewMode, sceneText)}`);
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `#${buildShareHash(editorState, previewMode, sceneText)}`,
+  );
 }
