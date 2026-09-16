@@ -1,0 +1,156 @@
+{
+  "status": "PASS",
+  "sourceCommit": "ee2404aad1a1ebd13308dad5b8b52be3bfcc21da",
+  "browser": "140.0.7339.16",
+  "method": "Playwright headed Chromium under Xvfb; production Pages bundle; real WGSL via software Vulkan; animation clock paused only for still captures; no generated mockups or pixel retouching",
+  "gallery": "Six preset choices: selected orb is live WebGPU, other tiles are the repository preset thumbnails.",
+  "screenshotCount": 4,
+  "checked": 14,
+  "passed": 14,
+  "failed": 0,
+  "results": [
+    {
+      "name": "workbench loads with all 13 presets and loaded thumbnails",
+      "pass": true
+    },
+    {
+      "name": "product header is visible and not covered",
+      "pass": true
+    },
+    {
+      "name": "preset selection and scene mode respond",
+      "pass": true
+    },
+    {
+      "name": "exported iframe targets an HTTP-200 file",
+      "pass": true
+    },
+    {
+      "name": "React example changes state, preset and text",
+      "pass": true
+    },
+    {
+      "name": "six preset choices switch one live GPU preview",
+      "pass": true
+    },
+    {
+      "name": "iframe handshake and state round trip",
+      "pass": true
+    },
+    {
+      "name": "malformed messages from valid parent are ignored",
+      "pass": true
+    },
+    {
+      "name": "sibling-window messages are ignored",
+      "pass": true
+    },
+    {
+      "name": "query state and preview work without preset",
+      "pass": true
+    },
+    {
+      "name": "invalid explicit parent origin fails closed",
+      "pass": true
+    },
+    {
+      "name": "mobile views have no horizontal document overflow",
+      "pass": true
+    },
+    {
+      "name": "fallback works with WebGPU unavailable",
+      "pass": true
+    },
+    {
+      "name": "no application exceptions, console errors or failed local assets",
+      "pass": true
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "01-workbench.png",
+      "sha256": "b27b28fa470b28dfc08761fe21e8a66d544966cb7f5d30695b85f5515fbdd732",
+      "url": "http://127.0.0.1:4173/Apple-orc/#effect=orb-glass-liquid&style=voiceWave&glass=1&state=thinking&activation=0.22&transition=0.65&preview=orb&text=Thinking...&speed=0.95&idleSpeed=0.266&radius=0.7&contourDeform=0.1&idleContourDeform=0.03&zoom=0.36&idleZoom=0.3312&warp=2.6&idleWarp=1.1960000000000002&ridgeAmt=0.46&idleRidgeAmt=0.1932&sharp=2.2&idleSharp=2.2&bandDensity=2&idleBandDensity=2&metalDepth=0.25&idleMetalDepth=0.25&metalRoughness=0.22&idleMetalRoughness=0.22&chromaticShift=0.42&idleChromaticShift=0.42&metalScale=0.77&metalStretch=0.23&idleMetalStretch=0.23&metalAngle=65&metalOffset=0&metalPhase=0&metalEvolution=1&idleMetalEvolution=1&particleDensity=0.72&ribbonCount=5&ribbonWidth=0.42&idleRibbonWidth=0.42&ribbonTwist=1.25&idleRibbonTwist=1.25&ribbonFold=0.55&idleRibbonFold=0.55&ribbonBreath=0.3&idleRibbonBreath=0.3&particleSize=1.2&particleBloom=0.7&shade=0.08&idleShade=0.08&exposure=1.35&idleExposure=0.8370000000000001&sheen=0.22&gloss=0.36&glassOpacity=0.48&shellMidAlpha=0.18&shellEdgeAlpha=0.2&edgeSoftness=0.005&edgeGlow=0&idleEdgeGlow=0&colorA=%2309030E&idleColorA=%2308050B&colorB=%23CE2CCB&idleColorB=%236A2F69&colorC=%23FF5C71&idleColorC=%238C4652&colorD=%237B53FF&idleColorD=%2355467F&highlightColor=%23FFD9F0&idleHighlightColor=%23B58AA5&shellInner=%23FFFFFF&shellMid=%23E48BFF&shellEdge=%23FF7890&sheenColor=%23FFF1FA&specColor=%23E7D9FF&canvasColor=%23020105&glowColor=%23CE2CCB&idleGlowColor=%236C3E72",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "deviceScaleFactor": 1.5,
+      "pixelSize": [
+        2400,
+        1500
+      ],
+      "renderer": [
+        "gpu"
+      ],
+      "animationClock": "paused only during screenshot, resumed for interactions",
+      "capturedAt": "2026-09-16T12:42:45.339Z"
+    },
+    {
+      "file": "02-interface.png",
+      "sha256": "e51c5979de9f35a8c8731ecd9903c19e4f5ad4bb24ff6c2a9bd798d8c3cbbe70",
+      "url": "http://127.0.0.1:4173/Apple-orc/showcase.html?view=interface",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "deviceScaleFactor": 1.5,
+      "pixelSize": [
+        2400,
+        1500
+      ],
+      "renderer": [
+        "gpu"
+      ],
+      "animationClock": "paused only during screenshot, resumed for interactions",
+      "capturedAt": "2026-09-16T12:43:11.164Z"
+    },
+    {
+      "file": "03-presets.png",
+      "sha256": "4436c07376500c166c0fdaa73df1267788e068c64d83d98bd23e34f61b8c1a6c",
+      "url": "http://127.0.0.1:4173/Apple-orc/showcase.html?view=presets",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "deviceScaleFactor": 1.5,
+      "pixelSize": [
+        2400,
+        1500
+      ],
+      "renderer": [
+        "gpu"
+      ],
+      "animationClock": "paused only during screenshot, resumed for interactions",
+      "capturedAt": "2026-09-16T12:43:37.421Z"
+    },
+    {
+      "file": "04-iframe.png",
+      "sha256": "4338c033ed6d7fb170efd67a61611e6500166a2302261534e0be15f8692ca9e1",
+      "url": "http://127.0.0.1:4173/Apple-orc/showcase.html?view=embed",
+      "viewport": {
+        "width": 1600,
+        "height": 1000
+      },
+      "deviceScaleFactor": 1.5,
+      "pixelSize": [
+        2400,
+        1500
+      ],
+      "renderer": [
+        "gpu"
+      ],
+      "animationClock": "paused only during screenshot, resumed for interactions",
+      "capturedAt": "2026-09-16T12:43:50.047Z"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [],
+  "warnings": [],
+  "networkErrors": [],
+  "limitations": [
+    "Chromium only; not Safari/iOS certification",
+    "Software Vulkan executes the real WebGPU shader; no physical-GPU speed claim",
+    "Local component examples; no model API, microphone or customer deployment"
+  ]
+}

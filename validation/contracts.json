@@ -1,0 +1,67 @@
+{
+  "checked": 15,
+  "passed": 15,
+  "failed": 0,
+  "results": [
+    {
+      "name": "valid ping accepted",
+      "pass": true
+    },
+    {
+      "name": "valid states accepted",
+      "pass": true
+    },
+    {
+      "name": "valid text accepted",
+      "pass": true
+    },
+    {
+      "name": "unknown commands rejected",
+      "pass": true
+    },
+    {
+      "name": "invalid states rejected",
+      "pass": true
+    },
+    {
+      "name": "missing state rejected",
+      "pass": true
+    },
+    {
+      "name": "object text rejected",
+      "pass": true
+    },
+    {
+      "name": "oversized text rejected",
+      "pass": true
+    },
+    {
+      "name": "null and foreign messages rejected",
+      "pass": true
+    },
+    {
+      "name": "GitHub Pages iframe uses existing HTML file",
+      "pass": true
+    },
+    {
+      "name": "React embed uses existing HTML file",
+      "pass": true
+    },
+    {
+      "name": "React orb mode preserves requested height",
+      "pass": true
+    },
+    {
+      "name": "React messaging example avoids wildcard target",
+      "pass": true
+    },
+    {
+      "name": "iframe attribute cannot be escaped by hash",
+      "pass": true
+    },
+    {
+      "name": "base path preserved",
+      "pass": true
+    }
+  ]
+}
