@@ -26,8 +26,6 @@ const results=[], errors=[], consoleErrors=[], warnings=[], networkErrors=[], sc
 const browser = await chromium.launch({headless:false,args:['--enable-unsafe-webgpu','--enable-gpu','--use-angle=vulkan','--use-vulkan=swiftshader','--use-webgpu-adapter=swiftshader','--enable-features=Vulkan','--disable-vulkan-surface']});
 const context = await browser.newContext({viewport:{width:1600,height:1000},deviceScaleFactor:1.5,locale:'en-US',permissions:['clipboard-read','clipboard-write']});
 const page = await context.newPage();
-// Install before navigation. Time runs normally for every interaction; pause only
-// while photographing a completed animation frame, then immediately resume.
 await page.clock.install();
 page.setDefaultTimeout(30000);
 page.on('pageerror',e=>errors.push(e.message));
@@ -35,29 +33,27 @@ page.on('console',m=>{if(m.type()==='warning')warnings.push(m.text());if(m.type(
 page.on('response',r=>{if(new URL(r.url()).origin===origin&&r.status()>=400)networkErrors.push({url:r.url(),status:r.status()});});
 page.on('requestfailed',r=>{if(new URL(r.url()).origin===origin&&!r.failure()?.errorText.includes('ABORTED'))networkErrors.push({url:r.url(),failure:r.failure()});});
 async function check(name,run){try{await run();results.push({name,pass:true});console.log('PASS',name);}catch(e){results.push({name,pass:false,error:e.message});console.error('FAIL',name,e.message);}}
-async function open(route){
-  const response=await page.goto(base+route,{waitUntil:'networkidle'});assert.equal(response.status(),200);
-  await page.waitForFunction(()=>{
+async function waitForRenderers(gpuOnly=false){
+  await page.waitForFunction(gpu=>{
     const nodes=[...document.querySelectorAll('[data-renderer]')];
     for(const frame of document.querySelectorAll('iframe')){try{nodes.push(...frame.contentDocument.querySelectorAll('[data-renderer]'));}catch{}}
-    return nodes.length>0&&nodes.every(n=>n.dataset.renderer!=='loading');
-  },null,{timeout:30000});
-  await page.waitForTimeout(2500);
+    return nodes.length>0&&nodes.every(n=>gpu?n.dataset.renderer==='gpu':n.dataset.renderer!=='loading');
+  },gpuOnly,{timeout:gpuOnly?90000:30000});
+}
+async function open(route){
+  const response=await page.goto(base+route,{waitUntil:'networkidle'});assert.equal(response.status(),200);
+  await waitForRenderers();await page.waitForTimeout(2500);
 }
 async function photograph(file){
   const at=await page.evaluate(()=>Date.now());
   await page.clock.pauseAt(new Date(at+1000));
-  try {
-    await page.waitForTimeout(1500);
-    await page.screenshot({path:file,fullPage:false,timeout:90000});
-  } finally { await page.clock.resume(); }
+  try {await page.waitForTimeout(1500);await page.screenshot({path:file,fullPage:false,timeout:90000});}
+  finally {await page.clock.resume();}
 }
 async function capture(name){
+  await waitForRenderers(true);
   const renderer=[];for(const frame of page.frames())renderer.push(...await frame.locator('[data-renderer]').evaluateAll(nodes=>nodes.map(n=>n.dataset.renderer)));
-  assert.ok(renderer.length>0&&renderer.every(r=>r==='gpu'),`Capture ${name} requires WebGPU; got ${renderer}`);
-  const file=`evidence/screenshots/${name}.png`;
-  console.log('CAPTURE',name,'start');
-  await photograph(file);
+  const file=`evidence/screenshots/${name}.png`;console.log('CAPTURE',name,'start');await photograph(file);
   screenshots.push({file:`${name}.png`,sha256:createHash('sha256').update(await readFile(file)).digest('hex'),url:page.url(),viewport:{width:1600,height:1000},deviceScaleFactor:1.5,pixelSize:[2400,1500],renderer,animationClock:'paused only during screenshot, resumed for interactions',capturedAt:new Date().toISOString()});
   console.log('CAPTURE',name,'complete');
 }
@@ -69,7 +65,7 @@ try{
   await check('exported iframe targets an HTTP-200 file',async()=>{await page.getByRole('button',{name:'Copy Code',exact:true}).click();const text=await page.locator('.orc-code').innerText();const match=text.match(/src="([^"]+)"/);assert.ok(match);assert.ok(match[1].includes('embed.html#'));assert.equal((await context.request.get(match[1].split('#')[0])).status(),200);await page.getByRole('button',{name:'Close',exact:true}).click();});
   await check('React example changes state, preset and text',async()=>{await open('showcase.html?view=interface');await page.getByRole('button',{name:'Idle',exact:true}).click();assert.ok(await page.getByRole('heading',{name:'Ready when you are'}).isVisible());await page.getByRole('button',{name:'Thinking',exact:true}).click();await page.getByLabel('Status text',{exact:true}).fill('Thinking it through');await page.getByLabel('Preset',{exact:true}).selectOption('siri');assert.ok(await page.getByRole('heading',{name:'Thinking it through'}).isVisible());await page.getByRole('button',{name:'Copy integration code'}).click();assert.match(await page.evaluate(()=>navigator.clipboard.readText()),/AppleOrc/);});
   await page.waitForTimeout(2100);await capture('02-interface');
-  await check('gallery has six WebGPU components and state controls',async()=>{await open('showcase.html?view=presets');assert.equal(await page.locator('.live-preset-grid [data-renderer]').count(),6);await page.getByRole('button',{name:'Idle',exact:true}).click();await page.getByRole('button',{name:'Thinking',exact:true}).click();await page.waitForFunction(()=>[...document.querySelectorAll('[data-renderer]')].every(n=>n.dataset.renderer==='gpu'),null,{timeout:60000});});
+  await check('six preset choices switch one live GPU preview',async()=>{await open('showcase.html?view=presets');assert.equal(await page.locator('.live-preset-grid article').count(),6);assert.equal(await page.locator('.live-preset-grid [data-renderer]').count(),1);await page.locator('[data-preset="chromaticMetal"]').click();assert.equal(await page.locator('[data-preset="chromaticMetal"]').getAttribute('aria-pressed'),'true');await page.getByRole('button',{name:'Idle',exact:true}).click();await page.getByRole('button',{name:'Thinking',exact:true}).click();await waitForRenderers(true);assert.ok(await page.locator('.live-preset-grid img').evaluateAll(imgs=>imgs.every(img=>img.complete&&img.naturalWidth>0)));});
   await page.waitForTimeout(2500);await capture('03-presets');
   await check('iframe handshake and state round trip',async()=>{await open('showcase.html?view=embed');await page.getByRole('button',{name:'Thinking',exact:true}).click();await page.frameLocator('iframe').locator('main[data-state="thinking"]').waitFor();await page.getByLabel('Widget text',{exact:true}).fill('Thinking it through');assert.equal(await page.frameLocator('iframe').locator('.orc-scene-pill-text').innerText(),'Thinking it through');await page.getByRole('button',{name:'Ping widget'}).click();await page.waitForFunction(()=>document.querySelector('output').textContent.includes('pong'));});
   await capture('04-iframe');
@@ -83,6 +79,6 @@ try{
 }finally{
   const failed=results.filter(r=>!r.pass).length;
   const accepted=failed===0&&results.length===14&&screenshots.length===4;
-  await writeFile('evidence/browser.json',JSON.stringify({status:accepted?'PASS':'FAIL_OR_INCOMPLETE',sourceCommit:process.env.GITHUB_SHA??'local',browser:await browser.version(),method:'Playwright headed Chromium under Xvfb; production Pages bundle; real WGSL via software Vulkan; animation clock briefly paused for screenshots and resumed for interactions; no generated mockups or pixel retouching',screenshotCount:screenshots.length,checked:results.length,passed:results.length-failed,failed,results,screenshots,errors,consoleErrors,warnings,networkErrors,limitations:['Chromium only; not Safari/iOS certification','Software Vulkan executes the real WebGPU shader; no physical-GPU speed claim','Local component examples; no model API, microphone or customer deployment']},null,2));
+  await writeFile('evidence/browser.json',JSON.stringify({status:accepted?'PASS':'FAIL_OR_INCOMPLETE',sourceCommit:process.env.GITHUB_SHA??'local',browser:await browser.version(),method:'Playwright headed Chromium under Xvfb; production Pages bundle; real WGSL via software Vulkan; animation clock paused only for still captures; no generated mockups or pixel retouching',gallery:'Six preset choices: selected orb is live WebGPU, other tiles are the repository preset thumbnails.',screenshotCount:screenshots.length,checked:results.length,passed:results.length-failed,failed,results,screenshots,errors,consoleErrors,warnings,networkErrors,limitations:['Chromium only; not Safari/iOS certification','Software Vulkan executes the real WebGPU shader; no physical-GPU speed claim','Local component examples; no model API, microphone or customer deployment']},null,2));
   await browser.close();await new Promise(resolve=>server.close(resolve));if(!accepted)process.exitCode=1;
 }
