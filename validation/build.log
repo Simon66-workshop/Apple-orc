@@ -1,0 +1,13 @@
+> apple-orc@1.0.0 build
+> vite build
+
+vite v8.2.2 building client environment for production...
+transforming...
+✓ 1655 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   1.58 kB │ gzip:   0.68 kB
+dist/assets/index-DOPM-5Ml.css   29.94 kB │ gzip:   7.68 kB
+dist/assets/index-CaJb023_.js   482.50 kB │ gzip: 143.09 kB
+
+✓ built in 361ms
