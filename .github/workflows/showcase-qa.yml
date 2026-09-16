@@ -43,7 +43,9 @@ jobs:
         run: |
           npm install --prefix /tmp/orc-browser --no-audit --no-fund playwright@1.55.0
           /tmp/orc-browser/node_modules/.bin/playwright install --with-deps chromium
-          PLAYWRIGHT_MODULE=/tmp/orc-browser/node_modules/playwright/index.mjs node scripts/browser-qa.mjs 2>&1 | tee evidence/browser.log
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb xauth libvulkan1 mesa-vulkan-drivers
+          PLAYWRIGHT_MODULE=/tmp/orc-browser/node_modules/playwright/index.mjs xvfb-run -a -s '-screen 0 1920x1200x24' node scripts/browser-qa.mjs 2>&1 | tee evidence/browser.log
       - name: Preserve evidence even on failure
         if: always()
         uses: actions/upload-artifact@v4

@@ -1,12 +1,17 @@
 @import "./showcase.css";
 
-/* Keep long code lines inside their own scroll region, including narrow phones. */
-.showcase-interface > *,
-.embed-layout > *,
-.live-preset-grid > * {
-  min-width: 0;
-}
+/* Grid children must be able to shrink below a long code line's min-content width. */
+.showcase-interface > *, .embed-layout > *, .live-preset-grid > * { min-width: 0; }
+.is-orc-embed .orc-embed { background: transparent; }
 
-.is-orc-embed .orc-embed {
-  background: transparent;
+/* The workbench background belongs to its canvas, not over the product header. */
+.orc-workbench-shell .orc-bg { position: absolute; }
+.orc-product-bar { position: relative; z-index: 5; }
+
+/* Do not composite the stale Canvas fallback underneath a transparent GPU frame. */
+.orc-canvas-stack[data-renderer="gpu"] .orc-canvas-fallback { visibility: hidden; }
+
+/* Keep the provenance footer visible at the standard desktop capture size. */
+@media (min-width: 1101px) and (max-height: 1050px) {
+  .showcase-app main { padding-top: 46px; padding-bottom: 24px; }
 }
