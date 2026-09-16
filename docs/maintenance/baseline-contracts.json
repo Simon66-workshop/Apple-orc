@@ -1,0 +1,11 @@
+{
+  "source_commit": "0032a825edbd86f92005af54be128972a0b7c872",
+  "application_baseline": "2d6d6c32fa65a7e17a31d960e41777e46edb497f",
+  "workflow_run": 35093143285,
+  "artifact_id": 10444124617,
+  "checked": 15,
+  "passed": 5,
+  "failed": 10,
+  "interpretation": "EXPECTED RED. Initial workflow job incorrectly appeared successful because the default shell did not propagate pipeline failure through tee. Raw contracts.json records 10 failures. Fixed by explicitly selecting bash with pipefail in subsequent workflow revisions. This baseline is not an acceptance PASS.",
+  "failed_cases": ["unknown commands rejected", "invalid states rejected", "missing state rejected", "object text rejected", "oversized text rejected", "GitHub Pages iframe uses existing HTML file", "React embed uses existing HTML file", "React orb mode preserves requested height", "React messaging example avoids wildcard target", "iframe attribute cannot be escaped by hash"]
+}

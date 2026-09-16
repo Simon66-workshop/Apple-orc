@@ -1,0 +1,12 @@
+@import "./showcase.css";
+
+/* Keep long code lines inside their own scroll region, including narrow phones. */
+.showcase-interface > *,
+.embed-layout > *,
+.live-preset-grid > * {
+  min-width: 0;
+}
+
+.is-orc-embed .orc-embed {
+  background: transparent;
+}
