@@ -1,93 +1,89 @@
 # Apple Orc
 
-液态玻璃动态球工作台。在预览里调好预设、玻璃折射和 AI 状态，然后把球体嵌进其它网站或工作台项目。
+**Give your interface a little presence.**
 
-Liquid glass orb workbench. Tune a live orb, then drop it into another site or project.
+A liquid-glass orb workbench for AI interfaces. Tune a preset, switch between idle and thinking, and embed the result in your own page.
 
-Source: [github.com/Simon66-workshop/Apple-orc](https://github.com/Simon66-workshop/Apple-orc)
+**[Try the workbench](https://simon66-workshop.github.io/Apple-orc/) · [Live examples](https://simon66-workshop.github.io/Apple-orc/showcase.html) · [Integration guide](docs/INTEGRATION.md) · [中文](#中文说明)**
 
-Shader and motion model are adapted from [LerSent001/orb](https://github.com/LerSent001/orb) (MIT). UI is the 66X glass kit.
+![A real Apple Orc component in the interactive interface example](https://raw.githubusercontent.com/Simon66-workshop/Apple-orc/showcase-assets/screenshots/02-interface.png)
 
-## Use the orb in another project
+## What you can do
 
-### 1. iframe (any website)
+- Explore **13 presets** and tune motion, color, shape and glass parameters.
+- Switch **idle / thinking** and share configurations by URL hash.
+- Embed with **iframe** or reuse the **React source component**. The demo needs no model API key.
+- Use WebGPU with an approximate Canvas2D fallback. Workbench controls support English and Chinese.
 
-Copy **Copy Code → iframe embed** from the workbench, or:
+**This is a visual component, not an AI model or a complete assistant.** Showcase controls drive actual local component/iframe state, not an LLM, microphone or customer deployment. The preset library deliberately renders only the selected orb live; the other tiles use the repository's preset thumbnails rather than running six GPU devices.
+
+## Four actual interface captures
+
+Playwright captures of the production build, not generated mockups. The animation clock is paused only while taking each still image and resumed for interaction tests. Software Vulkan executes the actual WGSL shader; no physical-GPU performance is claimed. [Capture method](docs/maintenance/capture-method.md) · [source SHA, renderer and file hashes](https://github.com/Simon66-workshop/Apple-orc/tree/showcase-assets/validation)
+
+| Workbench | Preset choices and selected live preview |
+| --- | --- |
+| ![Workbench with editable controls](https://raw.githubusercontent.com/Simon66-workshop/Apple-orc/showcase-assets/screenshots/01-workbench.png) | ![Six preset choices with the selected orb rendered live](https://raw.githubusercontent.com/Simon66-workshop/Apple-orc/showcase-assets/screenshots/03-presets.png) |
+
+![Real iframe integration and round-trip state receipt](https://raw.githubusercontent.com/Simon66-workshop/Apple-orc/showcase-assets/screenshots/04-iframe.png)
+
+## Embed in a page
 
 ```html
 <iframe
-  title="Apple Orc"
-  src="https://YOUR-HOST/embed?style=siri&preview=scene&text=Thinking..."
-  style="border:0;width:100%;max-width:420px;height:120px;background:transparent"
+  title="Apple Orc status"
+  src="https://simon66-workshop.github.io/Apple-orc/embed.html?style=aurora&state=thinking&preview=scene&text=Thinking..."
+  style="border:0;width:100%;max-width:420px;height:140px"
 ></iframe>
 ```
 
-Drive idle / thinking from the host page:
+The [iframe lab](https://simon66-workshop.github.io/Apple-orc/showcase.html?view=embed) demonstrates `setState`, `setText` and `ping → pong`. Parent-window, origin and payload checks are enforced. With suppressed referrers, set `parentOrigin` explicitly; see the [guide](docs/INTEGRATION.md).
 
-```js
-iframe.contentWindow.postMessage(
-  { source: "apple-orc", type: "setState", state: "thinking" },
-  "*",
-);
-```
-
-Query params on `/embed`: `style` (preset name), `preview` (`scene` | `orb`), `text`, `state` (`idle` | `thinking`). A share hash from the workbench also works: `/embed#…`.
-
-### 2. In-repo React import
+## React source component
 
 ```tsx
-import { AppleOrc } from "@/lib/orb";
+import { AppleOrc } from '@/lib/orb';
 
-<AppleOrc preset="aurora" state="thinking" size={72} label="Thinking..." />
+<AppleOrc preset="siri" state="thinking" size={72} label="Thinking..." />
 ```
 
-Copy `src/lib/orb` into the other workbench. It includes the WebGPU renderer, a canvas fallback, presets, and state transitions.
+This import works inside the repository. It is **not a published npm package**. The guide explains the source files, styles, aliases and dependencies needed in another project. The `private` field in `package.json` prevents accidental npm publishing; the GitHub repository is public.
 
-### 3. Standalone HTML / SwiftUI
+## Run locally
 
-**Copy Code** also exports a self-contained Web page and a SwiftUI/Metal snapshot of the current parameters.
-
-### 4. JSON snapshot
-
-**Copy Code → JSON config** dumps thinking / idle params so another runtime can feed `createOrbRenderer`.
-
-## Library API
-
-```ts
-import {
-  AppleOrc,
-  createOrbRenderer,
-  createPresetOrbStateConfiguration,
-  resolveOrbStateParams,
-} from "@/lib/orb";
-```
-
-`AppleOrc` props: `preset`, `state` (`idle` | `thinking`), `size`, `label`, optional `params`.
-
-## Workbench
-
-- 13 animated presets (Siri Wave, Aurora Veil, Chromatic Metal, …)
-- Orb / Scene preview
-- Motion, color, shape, glass shell, edge & glow
-- Shareable URL hash
-- EN / 中文
-
-WebGPU is used when the browser supports it. Otherwise a canvas fallback keeps the orb alive.
-
-## Local run
+CI uses Node 22.
 
 ```bash
-npm install
+npm ci
 npm run dev
-```
-
-Open the printed local URL. `/embed` is the drop-in widget used by Copy Code.
-
-```bash
+npm run typecheck
+node scripts/test-contracts.mjs
 npm run build
 npm run preview
 ```
 
-## License
+For GitHub Pages: `GITHUB_PAGES=1 npm run build`. Output includes `embed.html` and `showcase.html`, so direct links do not require an SPA rewrite.
 
-MIT. Third-party shader notice: `NOTICE` and `public/THIRD_PARTY_ORB_LICENSE.txt`.
+JSON, standalone HTML and SwiftUI/Metal snapshot exports are retained. Browser QA covers the workbench, source component example and iframe protocol, not a separate native SwiftUI build or Safari/iOS certification. Canvas fallback is not visually identical to the GPU shader. Public hosting is a demonstration, not an uptime guarantee; self-host for controlled production use.
+
+## Contribute
+
+Tried it in a real interface? An integration example, reproducible browser bug or small fix is welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md). A star is appreciated when useful; no star exchanges or inflated adoption claims.
+
+## 中文说明
+
+**不只是看效果，调好以后，把这个球放进你自己的网页。**
+
+13 套液态玻璃预设，可调颜色、运动与玻璃效果，支持 idle / thinking 状态，以及 React 源码引用、iframe 嵌入。
+
+先试[在线工作台](https://simon66-workshop.github.io/Apple-orc/)或[实际接入示例](https://simon66-workshop.github.io/Apple-orc/showcase.html)。预设页只实时渲染当前选中的球，其余是仓库自带缩略图；iframe 页可查看真实消息回执。
+
+这是界面组件，不是大模型，也未接麦克风。React 组件没有发布 npm 包；跨项目引用需要的样式、别名和依赖见[接入说明](docs/INTEGRATION.md)。浏览器不支持 WebGPU 时，使用近似的 Canvas 回退预览。
+
+好用欢迎点个 ⭐；有问题请提 Issue，带上浏览器、复现步骤和截图。
+
+## Credits & license
+
+MIT. Shader and motion model adapted from **[LerSent001/orb](https://github.com/LerSent001/orb)**; see [NOTICE](NOTICE) and [third-party license](public/THIRD_PARTY_ORB_LICENSE.txt). Workbench, integration examples and maintenance by Simon66-workshop / 66Workshop. Preserve upstream attribution when reusing the code.
+
+Independent community project. **Not affiliated with Apple or OpenAI.** No official award, endorsement or large-scale adoption is claimed.

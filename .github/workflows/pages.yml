@@ -1,17 +1,13 @@
 name: GitHub Pages
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
-
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
@@ -22,9 +18,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run typecheck
+      - run: node scripts/test-contracts.mjs
       - run: npm run build
         env:
-          GITHUB_PAGES: "1"
+          GITHUB_PAGES: '1'
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist

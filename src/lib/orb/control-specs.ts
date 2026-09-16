@@ -1,53 +1,18 @@
 import type { ColorKey, NumericKey } from "./editor-i18n";
-import {
-  orbRadiusRange,
-  styleNames,
-  type StyleName,
-} from "./presets";
-
+import { orbRadiusRange, styleNames, type StyleName } from "./presets";
 export type PreviewMode = "orb" | "scene";
-
 export const defaultSceneText = "Thinking...";
 export const maxSceneTextLength = 20;
 export const hashSyncDelayMs = 500;
 export const localeStorageKey = "apple-orc-editor-locale";
-
 export const activationDurationRange = { min: 0.05, max: 0.8, step: 0.01 } as const;
 export const transitionDurationRange = { min: 0.1, max: 2, step: 0.05 } as const;
-
-export type NumericSpec = {
-  key: NumericKey;
-  min: number;
-  max: number;
-  step: number;
-  enabledStyles?: readonly StyleName[];
-};
-
-const ridgeStyles: readonly StyleName[] = [
-  "siri",
-  "voiceWave",
-  "spectrum",
-  "aurora",
-  "frost",
-  "plasma",
-  "blueDrop",
-  "violetEmber",
-  "refractiveBlob",
-];
-const sharpStyles: readonly StyleName[] = [
-  "frost",
-  "plasma",
-  "chrome",
-  "blueDrop",
-  "violetEmber",
-  "refractiveBlob",
-];
-const standardShapeStyles = styleNames.filter(
-  (style) => style !== "chromaticMetal" && style !== "particleRibbon",
-);
+export type NumericSpec = { key: NumericKey; min: number; max: number; step: number; enabledStyles?: readonly StyleName[] };
+const ridgeStyles: readonly StyleName[] = ["siri", "voiceWave", "spectrum", "aurora", "frost", "plasma", "blueDrop", "violetEmber", "refractiveBlob"];
+const sharpStyles: readonly StyleName[] = ["frost", "plasma", "chrome", "blueDrop", "violetEmber", "refractiveBlob"];
+const standardShapeStyles = styleNames.filter(style => style !== "chromaticMetal" && style !== "particleRibbon");
 const chromaticMetalStyles: readonly StyleName[] = ["chromaticMetal"];
 const particleRibbonStyles: readonly StyleName[] = ["particleRibbon"];
-
 export const numericSpecs: readonly NumericSpec[] = [
   { key: "speed", min: 0, max: 3, step: 0.01 },
   { key: "radius", ...orbRadiusRange, step: 0.01 },
@@ -84,60 +49,12 @@ export const numericSpecs: readonly NumericSpec[] = [
   { key: "edgeSoftness", min: 0.005, max: 0.15, step: 0.005 },
   { key: "edgeGlow", min: 0, max: 1, step: 0.01 },
 ];
-
-export const numericSpecByKey = new Map(numericSpecs.map((spec) => [spec.key, spec]));
-
-export const colorKeys: readonly ColorKey[] = [
-  "colorA",
-  "colorB",
-  "colorC",
-  "colorD",
-  "highlightColor",
-  "shellInner",
-  "shellMid",
-  "shellEdge",
-  "sheenColor",
-  "specColor",
-  "canvasColor",
-  "glowColor",
-];
-
-export const compactPreviewStyles = new Set<StyleName>([
-  "particleRibbon",
-  "blueDrop",
-  "violetEmber",
-  "refractiveBlob",
-  "chromaticMetal",
-]);
-
-export const presetThumbUrl: Record<StyleName, string> = {
-  siri: "/presets/siri.png",
-  voiceWave: "/presets/voiceWave.png",
-  spectrum: "/presets/spectrum.png",
-  aurora: "/presets/aurora.png",
-  frost: "/presets/frost.png",
-  plasma: "/presets/plasma.png",
-  chrome: "/presets/chrome.png",
-  opal: "/presets/opal.png",
-  blueDrop: "/presets/blueDrop.png",
-  violetEmber: "/presets/violetEmber.png",
-  refractiveBlob: "/presets/refractiveBlob.png",
-  particleRibbon: "/presets/particleRibbon.png",
-  chromaticMetal: "/presets/chromaticMetal.png",
-};
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-export function normalizeColor(value: string): string | null {
-  return /^#[0-9a-f]{6}$/i.test(value) ? value.toUpperCase() : null;
-}
-
-export function limitSceneText(value: string): string {
-  return Array.from(value).slice(0, maxSceneTextLength).join("");
-}
-
-export function isSliderEnabled(spec: NumericSpec, style: StyleName): boolean {
-  return !spec.enabledStyles || spec.enabledStyles.includes(style);
-}
+export const numericSpecByKey = new Map(numericSpecs.map(spec => [spec.key, spec]));
+export const colorKeys: readonly ColorKey[] = ["colorA", "colorB", "colorC", "colorD", "highlightColor", "shellInner", "shellMid", "shellEdge", "sheenColor", "specColor", "canvasColor", "glowColor"];
+export const compactPreviewStyles = new Set<StyleName>(["particleRibbon", "blueDrop", "violetEmber", "refractiveBlob", "chromaticMetal"]);
+// Respect static deployments under /Apple-orc/ as well as a root-hosted app.
+export const presetThumbUrl = Object.fromEntries(styleNames.map(style => [style, `${import.meta.env.BASE_URL}presets/${style}.png`])) as Record<StyleName, string>;
+export function clamp(value: number, min: number, max: number): number { return Math.min(max, Math.max(min, value)); }
+export function normalizeColor(value: string): string | null { return /^#[0-9a-f]{6}$/i.test(value) ? value.toUpperCase() : null; }
+export function limitSceneText(value: string): string { return Array.from(value).slice(0, maxSceneTextLength).join(""); }
+export function isSliderEnabled(spec: NumericSpec, style: StyleName): boolean { return !spec.enabledStyles || spec.enabledStyles.includes(style); }
