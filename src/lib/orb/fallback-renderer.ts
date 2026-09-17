@@ -79,6 +79,62 @@ function bodyPath(
   ctx.ellipse(cx, cy, bodyW / 2, bodyH / 2, 0, 0, Math.PI * 2);
 }
 
+type WaveOpts = {
+  crossing?: boolean;
+  wrapSphere?: boolean;
+  backWave?: boolean;
+  soft?: number;
+};
+
+function filamentY(
+  nx: number,
+  amp: number,
+  phase: number,
+  pass: number,
+  wrapSphere: boolean,
+): { y: number; env: number } {
+  const env = wrapSphere
+    ? Math.sqrt(Math.max(0, 1 - nx * nx))
+    : Math.pow(Math.max(0, Math.cos(Math.min(Math.abs(nx), 1) * Math.PI * 0.5)), 1.18);
+  const y =
+    Math.sin(nx * Math.PI * 2.18 + phase * 2.05 + pass) * amp * env +
+    Math.sin(nx * Math.PI * 4.4 - phase * 1.18 + pass * 0.45) * amp * 0.16 * env;
+  return { y, env };
+}
+
+function strokeFilament(
+  ctx: CanvasRenderingContext2D,
+  halfW: number,
+  amp: number,
+  phase: number,
+  pass: number,
+  wrapSphere: boolean,
+  yOffset: number,
+  steps: number,
+): void {
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i += 1) {
+    const nx = (i / steps) * 2 - 1;
+    const { y, env } = filamentY(nx, amp, phase, pass, wrapSphere);
+    const x = nx * halfW;
+    const py = y + yOffset * env;
+    if (i === 0) ctx.moveTo(x, py);
+    else ctx.lineTo(x, py);
+  }
+}
+
+function alongStroke(ctx: CanvasRenderingContext2D, halfW: number, params: OrbParams, alpha: number) {
+  const g = ctx.createLinearGradient(-halfW, 0, halfW, 0);
+  g.addColorStop(0, rgba(params.colorD, 0));
+  g.addColorStop(0.1, rgba(params.colorA, alpha * 0.45));
+  g.addColorStop(0.28, rgba(params.highlightColor, alpha));
+  g.addColorStop(0.48, rgba(params.colorB, alpha * 0.9));
+  g.addColorStop(0.68, rgba(params.colorC, alpha * 0.75));
+  g.addColorStop(0.86, rgba(params.colorD, alpha * 0.45));
+  g.addColorStop(1, rgba(params.colorD, 0));
+  return g;
+}
+
 function drawIridescentWave(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -89,134 +145,74 @@ function drawIridescentWave(
   phase: number,
   params: OrbParams,
   extraY = 0,
-  crossing = false,
-  soft = 0.3,
+  opts: WaveOpts = {},
 ): void {
-  const breath = 0.92 + 0.08 * Math.sin(phase * 0.85);
+  const crossing = opts.crossing ?? false;
+  const wrapSphere = opts.wrapSphere ?? false;
+  const backWave = opts.backWave ?? false;
+  const soft = opts.soft ?? 0.12;
+  const breath = 0.94 + 0.06 * Math.sin(phase * 0.8);
   const liveAmp = amp * breath;
-  const bands: Array<{
-    color: string;
-    offset: number;
-    freq: number;
-    lag: number;
-    width: number;
-    alpha: number;
-  }> = [
-    { color: params.colorD, offset: -0.7, freq: 1.82, lag: 0.28, width: 1.22, alpha: 0.62 },
-    { color: params.colorC, offset: -0.34, freq: 2.12, lag: 1.02, width: 1.08, alpha: 0.86 },
-    { color: params.highlightColor, offset: 0, freq: 2.02, lag: 0.12, width: 0.48, alpha: 1 },
-    { color: params.colorB, offset: 0.32, freq: 2.26, lag: 2.05, width: 1.12, alpha: 0.88 },
-    { color: params.colorA, offset: 0.68, freq: 1.9, lag: 2.68, width: 1.24, alpha: 0.78 },
-  ];
-
-  const passes = crossing ? [0, Math.PI] : [0];
-  const steps = crossing ? 128 : 96;
-
-  const sampleY = (
-    nx: number,
-    freq: number,
-    lag: number,
-    offset: number,
-    pass: number,
-  ): number => {
-    const envelope = Math.pow(Math.max(0, Math.cos(Math.min(Math.abs(nx), 1) * Math.PI * 0.5)), 1.22);
-    const sign = pass === 0 ? 1 : -0.82;
-    return (
-      Math.sin(nx * (2.02 + params.zoom * 2.6) * freq + phase * 2.08 + lag + pass) *
-        liveAmp *
-        envelope +
-      Math.sin(nx * 4.7 - phase * 1.18 + lag * 0.42 + pass * 0.45) * liveAmp * 0.24 * envelope +
-      offset * liveAmp * 0.88 * sign * envelope
-    );
-  };
-
-  const fillRibbon = (
-    freq: number,
-    lag: number,
-    offset: number,
-    pass: number,
-    halfThick: number,
-    color: string,
-    alpha: number,
-  ) => {
-    ctx.beginPath();
-    for (let i = 0; i <= steps; i += 1) {
-      const nx = (i / steps) * 2 - 1;
-      const x = nx * halfW;
-      const taper = 0.42 + 0.58 * Math.cos(nx * Math.PI * 0.5);
-      const y = sampleY(nx, freq, lag, offset, pass) - halfThick * taper;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    for (let i = steps; i >= 0; i -= 1) {
-      const nx = (i / steps) * 2 - 1;
-      const x = nx * halfW;
-      const taper = 0.42 + 0.58 * Math.cos(nx * Math.PI * 0.5);
-      const y = sampleY(nx, freq, lag, offset, pass) + halfThick * taper;
-      ctx.lineTo(x, y);
-    }
-    ctx.closePath();
-    const fade = ctx.createLinearGradient(-halfW, 0, halfW, 0);
-    fade.addColorStop(0, rgba(color, 0));
-    fade.addColorStop(0.1, rgba(color, alpha * 0.4));
-    fade.addColorStop(0.5, rgba(color, alpha));
-    fade.addColorStop(0.9, rgba(color, alpha * 0.4));
-    fade.addColorStop(1, rgba(color, 0));
-    ctx.fillStyle = fade;
-    ctx.fill();
-  };
+  const core = Math.max(1.4, thickness);
+  const steps = crossing ? 160 : 120;
+  const passes = crossing ? [0, Math.PI] : wrapSphere ? [0, 0.58] : [0];
 
   ctx.save();
   ctx.translate(cx, cy + extraY);
-  ctx.globalCompositeOperation = "lighter";
-
-  const glowBlur = Math.max(2.4, thickness * (0.5 + soft * 1.6));
-  ctx.filter = `blur(${glowBlur}px)`;
-  for (const pass of passes) {
-    fillRibbon(2.05, 0.2, 0, pass, thickness * (1.5 + soft), params.glowColor, 0.3 * params.exposure);
-    fillRibbon(2.12, 1.1, -0.2, pass, thickness * (1.15 + soft * 0.4), params.colorC, 0.24 * params.exposure);
-  }
-  ctx.filter = soft > 0.4 ? `blur(${Math.max(1.2, thickness * 0.45 * soft)}px)` : "none";
-
-  for (const pass of passes) {
-    for (const layer of bands) {
-      fillRibbon(
-        layer.freq,
-        layer.lag,
-        layer.offset,
-        pass,
-        Math.max(1.1, thickness * layer.width * (pass === 0 ? 0.52 : 0.44) * (1 + soft * 0.35)),
-        layer.color,
-        layer.alpha * (pass === 0 ? 1 : 0.82) * (1 - soft * 0.12),
-      );
-    }
-  }
-
-  ctx.filter = `blur(${Math.max(1.1, thickness * (0.28 + soft * 0.4))}px)`;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = rgba(params.highlightColor, 0.78 - soft * 0.2);
-  ctx.lineWidth = Math.max(1.1, thickness * 0.28);
-  ctx.beginPath();
-  for (let i = 0; i <= steps; i += 1) {
-    const nx = (i / steps) * 2 - 1;
-    const x = nx * halfW;
-    const envelope = Math.pow(Math.max(0, Math.cos(Math.min(Math.abs(nx), 1) * Math.PI * 0.5)), 1.35);
-    const y = Math.sin(nx * (2.12 + params.zoom * 2.4) + phase * 2.08) * liveAmp * envelope * 0.72;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+  ctx.globalCompositeOperation = "lighter";
+
+  if (backWave) {
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.filter = `blur(${Math.max(1.2, core * 0.8)}px)`;
+    ctx.strokeStyle = alongStroke(ctx, halfW, params, 0.55);
+    ctx.lineWidth = core * 1.1;
+    strokeFilament(ctx, halfW, liveAmp * 0.42, phase + 0.7, Math.PI, wrapSphere, 0, 80);
+    ctx.stroke();
+    ctx.restore();
   }
-  ctx.stroke();
+
+  ctx.filter = `blur(${Math.max(2.2, core * (1.6 + soft * 2.2))}px)`;
+  for (const pass of passes) {
+    const passAmp = wrapSphere && pass !== 0 ? liveAmp * 0.72 : liveAmp;
+    ctx.strokeStyle = rgba(params.highlightColor, 0.5 * params.exposure);
+    ctx.lineWidth = core * (2.4 + soft);
+    strokeFilament(ctx, halfW, passAmp, phase, pass, wrapSphere, 0, steps);
+    ctx.stroke();
+  }
   ctx.filter = "none";
 
-  const bloom = ctx.createRadialGradient(0, 0, 1, 0, 0, Math.max(halfW * 0.42, liveAmp * 2.4));
-  bloom.addColorStop(0, rgba(params.highlightColor, 0.22 * params.exposure));
-  bloom.addColorStop(0.35, rgba(params.colorA, 0.08 * params.exposure));
-  bloom.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = bloom;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, halfW * 0.34, Math.max(liveAmp * 1.6, thickness * 1.8), 0, 0, Math.PI * 2);
-  ctx.fill();
+  for (const pass of passes) {
+    const passAmp = wrapSphere && pass !== 0 ? liveAmp * 0.72 : liveAmp;
+    const fringe = core * (1.15 + soft * 0.4);
+    ctx.strokeStyle = alongStroke(ctx, halfW, params, 0.55);
+    ctx.lineWidth = fringe;
+    strokeFilament(ctx, halfW, passAmp, phase, pass, wrapSphere, core * 0.55, steps);
+    ctx.stroke();
+
+    ctx.strokeStyle = rgba(params.colorC, 0.5);
+    ctx.lineWidth = fringe * 0.85;
+    strokeFilament(ctx, halfW, passAmp, phase, pass, wrapSphere, -core * 0.45, steps);
+    ctx.stroke();
+
+    ctx.strokeStyle = rgba(params.colorB, 0.55);
+    ctx.lineWidth = fringe * 0.8;
+    strokeFilament(ctx, halfW, passAmp, phase, pass, wrapSphere, core * 0.7, steps);
+    ctx.stroke();
+
+    ctx.strokeStyle = alongStroke(ctx, halfW, params, 1);
+    ctx.lineWidth = core * 0.95;
+    strokeFilament(ctx, halfW, passAmp, phase, pass, wrapSphere, 0, steps);
+    ctx.stroke();
+
+    ctx.strokeStyle = rgba(params.highlightColor, 0.95);
+    ctx.lineWidth = Math.max(1, core * 0.42);
+    strokeFilament(ctx, halfW, passAmp, phase, pass, wrapSphere, 0, steps);
+    ctx.stroke();
+  }
+
   ctx.restore();
 }
 
@@ -230,169 +226,135 @@ function drawSiriAi(
   const layout = siriAiLayout(params.shapeMorph);
   const minDim = Math.min(width, height);
   const squash = 1 + params.contourDeform * 0.42;
-  const breath = 1 + 0.012 * Math.sin(phase * 0.62);
-  let bodyW = Math.min(width * 0.94, minDim * layout.widthScale * params.radius) * squash * breath;
-  let bodyH =
+  const breath = 1 + 0.01 * Math.sin(phase * 0.62);
+  const bodyW = Math.min(width * 0.94, minDim * layout.widthScale * params.radius) * squash * breath;
+  const bodyH =
     Math.min(height * 0.9, minDim * layout.heightScale * params.radius) / Math.sqrt(squash) / breath;
   const cx = width / 2;
   const cy = height / 2;
   const stadium = siriAiSilhouette(layout) === "stadium";
   const freeWave = layout.bodyAlpha < 0.18;
-  const crossing = layout.waveAmp > 0.12;
+  const wrapSphere = !freeWave && !stadium;
+  const crossing = freeWave || layout.waveAmp > 0.2;
   const waveHalf = freeWave ? width * 0.46 : bodyW * 0.46;
   const amp =
-    (freeWave ? height * 0.2 : Math.min(bodyH, bodyW) * layout.waveAmp) *
-    (0.82 + params.ridgeAmt * 0.4);
+    (freeWave ? height * 0.18 : Math.min(bodyH, bodyW) * layout.waveAmp) *
+    (0.85 + params.ridgeAmt * 0.3);
   const thickness = freeWave
-    ? Math.max(12, width * 0.036)
-    : Math.min(bodyH, bodyW) * layout.waveThick * (0.92 + params.zoom * 0.35);
+    ? Math.max(2.4, width * 0.007)
+    : Math.min(bodyH, bodyW) * layout.waveThick * (0.9 + params.zoom * 0.25);
   const waveCy = cy + (freeWave ? 0 : bodyH * 0.5 * layout.waveY);
+  const rimScale = Math.min(bodyW, bodyH);
 
   ctx.clearRect(0, 0, width, height);
 
-  if (params.edgeGlow > 0.01 || layout.bodyAlpha < 0.45 || layout.glass > 0.4) {
-    const glowR = Math.max(bodyW, bodyH) * (0.62 + params.edgeGlow * 0.5);
+  if (params.edgeGlow > 0.01 || freeWave) {
+    const glowR = Math.max(bodyW, bodyH) * (0.55 + params.edgeGlow * 0.4);
     const glow = ctx.createRadialGradient(cx, waveCy, 2, cx, waveCy, glowR);
-    glow.addColorStop(0, rgba(params.glowColor, 0.32 * Math.max(params.edgeGlow, 0.18) * params.exposure));
-    glow.addColorStop(0.42, rgba(params.colorB, 0.08 * params.exposure));
+    glow.addColorStop(0, rgba(params.glowColor, 0.18 * Math.max(params.edgeGlow, 0.12) * params.exposure));
+    glow.addColorStop(0.45, rgba(params.colorB, 0.04 * params.exposure));
     glow.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, width, height);
   }
 
-  if (!freeWave) {
-    const rimScale = Math.min(bodyW, bodyH);
+  if (freeWave) {
+    drawIridescentWave(ctx, cx, waveCy, waveHalf, amp, thickness, phase, params, 0, {
+      crossing: true,
+      wrapSphere: false,
+      backWave: false,
+      soft: layout.waveSoft,
+    });
+    return;
+  }
+
+  if (stadium) {
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    ctx.filter = `blur(${Math.max(4, rimScale * 0.05)}px)`;
-    ctx.strokeStyle = rgba(params.highlightColor, 0.42 * layout.glass);
-    ctx.lineWidth = Math.max(3, rimScale * 0.055);
-    bodyPath(ctx, cx, cy, bodyW, bodyH, stadium);
-    ctx.stroke();
-    ctx.filter = `blur(${Math.max(2, rimScale * 0.018)}px)`;
-    ctx.strokeStyle = rgba(params.colorB, 0.28 * layout.glass);
-    ctx.lineWidth = Math.max(1.4, rimScale * 0.02);
-    bodyPath(ctx, cx, cy, bodyW, bodyH, stadium);
+    ctx.filter = `blur(${Math.max(3, rimScale * 0.035)}px)`;
+    ctx.strokeStyle = rgba(params.highlightColor, 0.5 * layout.glass);
+    ctx.lineWidth = Math.max(2.4, rimScale * 0.04);
+    bodyPath(ctx, cx, cy, bodyW, bodyH, true);
     ctx.stroke();
     ctx.restore();
+  }
 
+  ctx.save();
+  ctx.globalAlpha = layout.bodyAlpha;
+  bodyPath(ctx, cx, cy, bodyW, bodyH, stadium);
+  ctx.clip();
+
+  const base = ctx.createRadialGradient(
+    cx - bodyW * 0.12,
+    cy - bodyH * 0.28,
+    rimScale * 0.04,
+    cx,
+    cy + bodyH * 0.08,
+    Math.max(bodyW, bodyH) * 0.78,
+  );
+  base.addColorStop(0, mix("#1a1c28", params.colorA, 0.08));
+  base.addColorStop(0.35, mix("#09090f", params.colorD, 0.06));
+  base.addColorStop(1, "#030308");
+  ctx.fillStyle = base;
+  ctx.fillRect(cx - bodyW, cy - bodyH, bodyW * 2, bodyH * 2);
+
+  const shade = ctx.createLinearGradient(cx, cy - bodyH / 2, cx, cy + bodyH / 2);
+  shade.addColorStop(0, "rgba(255,255,255,0.1)");
+  shade.addColorStop(0.4, "rgba(0,0,0,0)");
+  shade.addColorStop(1, "rgba(0,0,0,0.5)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(cx - bodyW, cy - bodyH, bodyW * 2, bodyH * 2);
+
+  drawIridescentWave(ctx, cx, waveCy, waveHalf, amp, thickness, phase, params, 0, {
+    crossing: false,
+    wrapSphere,
+    backWave: wrapSphere,
+    soft: layout.waveSoft,
+  });
+  ctx.restore();
+
+  if (params.glassEnabled && layout.glass > 0.05) {
     ctx.save();
-    ctx.globalAlpha = layout.bodyAlpha;
+    ctx.globalAlpha = layout.glass * Math.max(params.glassOpacity, 0.28);
     bodyPath(ctx, cx, cy, bodyW, bodyH, stadium);
     ctx.clip();
 
-    const base = ctx.createRadialGradient(
-      cx,
-      cy - bodyH * 0.22,
-      Math.min(bodyW, bodyH) * 0.05,
-      cx,
-      cy,
-      Math.max(bodyW, bodyH) * 0.78,
+    ctx.globalCompositeOperation = "lighter";
+    const spec = ctx.createRadialGradient(
+      cx - bodyW * 0.26,
+      cy - bodyH * 0.34,
+      1,
+      cx - bodyW * 0.18,
+      cy - bodyH * 0.24,
+      rimScale * 0.42,
     );
-    base.addColorStop(0, mix(params.colorA, "#08080f", 0.82 + params.shade * 0.12));
-    base.addColorStop(0.48, mix(params.colorD, "#04040a", 0.88));
-    base.addColorStop(1, "#010104");
-    ctx.fillStyle = base;
-    ctx.fillRect(cx - bodyW, cy - bodyH, bodyW * 2, bodyH * 2);
-
-    const innerShade = ctx.createLinearGradient(cx, cy - bodyH / 2, cx, cy + bodyH / 2);
-    innerShade.addColorStop(0, "rgba(255,255,255,0.14)");
-    innerShade.addColorStop(0.4, "rgba(0,0,0,0)");
-    innerShade.addColorStop(1, "rgba(0,0,0,0.48)");
-    ctx.fillStyle = innerShade;
-    ctx.fillRect(cx - bodyW, cy - bodyH, bodyW * 2, bodyH * 2);
-
-    drawIridescentWave(
-      ctx,
-      cx,
-      waveCy,
-      waveHalf,
-      amp,
-      thickness,
-      phase,
-      params,
-      0,
-      crossing,
-      layout.waveSoft,
-    );
+    spec.addColorStop(0, rgba(params.sheenColor, 0.7));
+    spec.addColorStop(0.28, rgba(params.specColor, 0.16));
+    spec.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = spec;
+    ctx.beginPath();
+    ctx.ellipse(cx - bodyW * 0.2, cy - bodyH * 0.28, bodyW * 0.22, bodyH * 0.16, -0.55, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
-
-    if (params.glassEnabled && layout.glass > 0.05) {
-      ctx.save();
-      ctx.globalAlpha = layout.glass * Math.max(params.glassOpacity, 0.35);
-      bodyPath(ctx, cx, cy, bodyW, bodyH, stadium);
-      ctx.clip();
-
-      if (typeof ctx.createConicGradient === "function") {
-        const conic = ctx.createConicGradient(-Math.PI * 0.55, cx, cy);
-        conic.addColorStop(0, rgba(params.colorA, 0.38));
-        conic.addColorStop(0.18, rgba(params.highlightColor, 0.22));
-        conic.addColorStop(0.4, rgba(params.colorB, 0.28));
-        conic.addColorStop(0.62, rgba(params.colorC, 0.24));
-        conic.addColorStop(0.82, rgba(params.colorD, 0.22));
-        conic.addColorStop(1, rgba(params.colorA, 0.38));
-        ctx.globalCompositeOperation = "lighter";
-        ctx.strokeStyle = conic;
-        ctx.lineWidth = Math.max(1.6, rimScale * 0.022);
-        bodyPath(ctx, cx, cy, bodyW - 3, bodyH - 3, stadium);
-        ctx.stroke();
-        ctx.globalCompositeOperation = "source-over";
-      }
-
-      const rim = ctx.createLinearGradient(
-        cx - bodyW * 0.5,
-        cy - bodyH * 0.5,
-        cx + bodyW * 0.5,
-        cy + bodyH * 0.5,
-      );
-      rim.addColorStop(0, rgba(params.sheenColor, 0.28 + params.sheen * 0.16));
-      rim.addColorStop(0.42, "rgba(255,255,255,0)");
-      rim.addColorStop(1, rgba(params.shellEdge, 0.16 + params.shellEdgeAlpha * 0.2));
-      ctx.fillStyle = rim;
-      ctx.fillRect(cx - bodyW, cy - bodyH, bodyW * 2, bodyH * 2);
-
-      ctx.globalCompositeOperation = "lighter";
-      const spec = ctx.createRadialGradient(
-        cx - bodyW * 0.24,
-        cy - bodyH * 0.32,
-        2,
-        cx - bodyW * 0.18,
-        cy - bodyH * 0.24,
-        Math.min(bodyW, bodyH) * 0.48,
-      );
-      spec.addColorStop(0, rgba(params.sheenColor, 0.62));
-      spec.addColorStop(0.36, rgba(params.specColor, 0.16));
-      spec.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = spec;
-      ctx.beginPath();
-      ctx.ellipse(cx - bodyW * 0.18, cy - bodyH * 0.26, bodyW * 0.3, bodyH * 0.22, -0.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    ctx.save();
-    ctx.strokeStyle = rgba(params.highlightColor, 0.34 + params.sheen * 0.16);
-    ctx.lineWidth = Math.max(1.2, rimScale * (0.01 + params.edgeSoftness * 0.3));
-    bodyPath(ctx, cx, cy, bodyW - 1.4, bodyH - 1.4, stadium);
-    ctx.stroke();
-    ctx.restore();
-  } else {
-    drawIridescentWave(
-      ctx,
-      cx,
-      waveCy,
-      Math.min(width * 0.48, Math.max(bodyW * 0.52, width * 0.42)),
-      amp * 1.28,
-      thickness * 1.28,
-      phase,
-      params,
-      0,
-      true,
-      layout.waveSoft,
-    );
   }
-}
 
+  ctx.save();
+  const rimW = stadium ? Math.max(1.6, rimScale * 0.014) : Math.max(1.1, rimScale * 0.0075);
+  const rimGrad = ctx.createLinearGradient(
+    cx - bodyW * 0.4,
+    cy - bodyH * 0.5,
+    cx + bodyW * 0.4,
+    cy + bodyH * 0.45,
+  );
+  rimGrad.addColorStop(0, rgba(params.highlightColor, stadium ? 0.55 : 0.38));
+  rimGrad.addColorStop(0.45, rgba(params.colorB, stadium ? 0.22 : 0.1));
+  rimGrad.addColorStop(1, rgba(params.shellEdge, 0.12));
+  ctx.strokeStyle = rimGrad;
+  ctx.lineWidth = rimW;
+  bodyPath(ctx, cx, cy, bodyW - rimW, bodyH - rimW, stadium);
+  ctx.stroke();
+  ctx.restore();
+}
 
 function drawBand(
   ctx: CanvasRenderingContext2D,
