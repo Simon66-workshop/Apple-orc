@@ -1032,21 +1032,27 @@ fn glsSdRoundBox(p: vec2<f32>, halfSize: vec2<f32>, r: f32) -> f32 {
   return length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0) - r;
 }
 
+fn glsSdEllipse(p: vec2<f32>, r: vec2<f32>) -> f32 {
+  let rr = max(r, vec2<f32>(0.001, 0.001));
+  let k = p / rr;
+  return (length(k) - 1.0) * min(rr.x, rr.y);
+}
+
 fn glsSiriAiSd(uv: vec2<f32>, rad: f32, morph: f32, t: f32) -> f32 {
   let m = clamp(morph, 0.0, 1.0);
   let sphere = length(uv) - rad;
-  let island = glsSdRoundBox(uv, vec2<f32>(rad * 1.18, rad * 0.74), rad * 0.72);
+  let ellipse = glsSdEllipse(uv, vec2<f32>(rad * 1.52, rad * 0.84));
   let drift = t * 2.2;
   let env = pow(max(1.0 - abs(uv.x) / (rad * 1.85), 0.0), 1.45);
   let waveY = (sin(uv.x * 2.2 / rad + drift) * 0.22
              + sin(uv.x * 4.1 / rad - drift * 0.62) * 0.07) * rad * env;
   let wave = max(abs(uv.y - waveY) - rad * 0.13 * (0.48 + env), abs(uv.x) - rad * 1.78);
-  let capsule = glsSdRoundBox(uv, vec2<f32>(rad * 1.78, rad * 0.86), rad * 0.36);
+  let capsule = glsSdRoundBox(uv, vec2<f32>(rad * 1.72, rad * 0.96), rad * 0.96);
   if (m < 0.34) {
-    return mix(sphere, island, smoothstep(0.0, 0.34, m));
+    return mix(sphere, ellipse, smoothstep(0.0, 0.34, m));
   }
   if (m < 0.67) {
-    return mix(island, wave, smoothstep(0.34, 0.67, m));
+    return mix(ellipse, wave, smoothstep(0.34, 0.67, m));
   }
   return mix(wave, capsule, smoothstep(0.67, 1.0, m));
 }

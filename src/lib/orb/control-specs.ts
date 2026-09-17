@@ -98,7 +98,6 @@ export const colorKeys: readonly ColorKey[] = [
   "glowColor",
 ];
 export const compactPreviewStyles = new Set<StyleName>([
-  "siriAi",
   "particleRibbon",
   "blueDrop",
   "violetEmber",

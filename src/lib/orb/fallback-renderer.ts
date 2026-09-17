@@ -3,7 +3,7 @@ import {
   type OrbRenderTarget,
 } from "./orb-states";
 import type { OrbParams, StyleName } from "./presets";
-import { siriAiLayout } from "./siri-ai";
+import { siriAiLayout, siriAiSilhouette } from "./siri-ai";
 
 export type FallbackRendererOptions = {
   canvas: HTMLCanvasElement;
@@ -63,6 +63,22 @@ function roundRectPath(
   ctx.closePath();
 }
 
+function bodyPath(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  bodyW: number,
+  bodyH: number,
+  stadium: boolean,
+): void {
+  if (stadium) {
+    roundRectPath(ctx, cx - bodyW / 2, cy - bodyH / 2, bodyW, bodyH, Math.min(bodyW, bodyH) / 2);
+    return;
+  }
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, bodyW / 2, bodyH / 2, 0, 0, Math.PI * 2);
+}
+
 function drawIridescentWave(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -74,6 +90,7 @@ function drawIridescentWave(
   params: OrbParams,
   extraY = 0,
   crossing = false,
+  soft = 0.3,
 ): void {
   const breath = 0.92 + 0.08 * Math.sin(phase * 0.85);
   const liveAmp = amp * breath;
@@ -153,12 +170,13 @@ function drawIridescentWave(
   ctx.translate(cx, cy + extraY);
   ctx.globalCompositeOperation = "lighter";
 
-  ctx.filter = `blur(${Math.max(2.4, thickness * 0.55)}px)`;
+  const glowBlur = Math.max(2.4, thickness * (0.5 + soft * 1.6));
+  ctx.filter = `blur(${glowBlur}px)`;
   for (const pass of passes) {
-    fillRibbon(2.05, 0.2, 0, pass, thickness * 1.65, params.glowColor, 0.28 * params.exposure);
-    fillRibbon(2.12, 1.1, -0.2, pass, thickness * 1.2, params.colorC, 0.22 * params.exposure);
+    fillRibbon(2.05, 0.2, 0, pass, thickness * (1.5 + soft), params.glowColor, 0.3 * params.exposure);
+    fillRibbon(2.12, 1.1, -0.2, pass, thickness * (1.15 + soft * 0.4), params.colorC, 0.24 * params.exposure);
   }
-  ctx.filter = "none";
+  ctx.filter = soft > 0.4 ? `blur(${Math.max(1.2, thickness * 0.45 * soft)}px)` : "none";
 
   for (const pass of passes) {
     for (const layer of bands) {
@@ -167,17 +185,17 @@ function drawIridescentWave(
         layer.lag,
         layer.offset,
         pass,
-        Math.max(1.1, thickness * layer.width * (pass === 0 ? 0.52 : 0.44)),
+        Math.max(1.1, thickness * layer.width * (pass === 0 ? 0.52 : 0.44) * (1 + soft * 0.35)),
         layer.color,
-        layer.alpha * (pass === 0 ? 1 : 0.82),
+        layer.alpha * (pass === 0 ? 1 : 0.82) * (1 - soft * 0.12),
       );
     }
   }
 
-  ctx.filter = `blur(${Math.max(1.1, thickness * 0.32)}px)`;
+  ctx.filter = `blur(${Math.max(1.1, thickness * (0.28 + soft * 0.4))}px)`;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = rgba(params.highlightColor, 0.78);
+  ctx.strokeStyle = rgba(params.highlightColor, 0.78 - soft * 0.2);
   ctx.lineWidth = Math.max(1.1, thickness * 0.28);
   ctx.beginPath();
   for (let i = 0; i <= steps; i += 1) {
@@ -211,145 +229,151 @@ function drawSiriAi(
 ): void {
   const layout = siriAiLayout(params.shapeMorph);
   const minDim = Math.min(width, height);
-  const bodyW = Math.min(width * 0.94, minDim * layout.widthScale * params.radius);
-  const bodyH = Math.min(height * 0.9, minDim * layout.heightScale * params.radius);
+  const squash = 1 + params.contourDeform * 0.42;
+  const breath = 1 + 0.012 * Math.sin(phase * 0.62);
+  let bodyW = Math.min(width * 0.94, minDim * layout.widthScale * params.radius) * squash * breath;
+  let bodyH =
+    Math.min(height * 0.9, minDim * layout.heightScale * params.radius) / Math.sqrt(squash) / breath;
   const cx = width / 2;
   const cy = height / 2;
-  const corner = Math.min(bodyW, bodyH) * 0.5 * layout.corner;
-  const x = cx - bodyW / 2;
-  const y = cy - bodyH / 2;
+  const stadium = siriAiSilhouette(layout) === "stadium";
   const freeWave = layout.bodyAlpha < 0.18;
-  const crossing = layout.waveAmp > 0.1;
-  const waveHalf = freeWave ? width * 0.46 : bodyW * (layout.waveY > 0.6 ? 0.485 : 0.46);
-  const amp = (freeWave ? height * 0.2 : Math.min(bodyH, bodyW) * layout.waveAmp) *
+  const crossing = layout.waveAmp > 0.12;
+  const waveHalf = freeWave ? width * 0.46 : bodyW * 0.46;
+  const amp =
+    (freeWave ? height * 0.2 : Math.min(bodyH, bodyW) * layout.waveAmp) *
     (0.82 + params.ridgeAmt * 0.4);
   const thickness = freeWave
     ? Math.max(12, width * 0.036)
     : Math.min(bodyH, bodyW) * layout.waveThick * (0.92 + params.zoom * 0.35);
-  const waveCy = cy + (freeWave ? 0 : (bodyH * 0.5) * layout.waveY);
+  const waveCy = cy + (freeWave ? 0 : bodyH * 0.5 * layout.waveY);
 
   ctx.clearRect(0, 0, width, height);
 
-  if (params.edgeGlow > 0.01 || layout.bodyAlpha < 0.45) {
-    const glowR = Math.max(bodyW, bodyH) * (0.58 + params.edgeGlow * 0.45);
+  if (params.edgeGlow > 0.01 || layout.bodyAlpha < 0.45 || layout.glass > 0.4) {
+    const glowR = Math.max(bodyW, bodyH) * (0.62 + params.edgeGlow * 0.5);
     const glow = ctx.createRadialGradient(cx, waveCy, 2, cx, waveCy, glowR);
-    glow.addColorStop(0, rgba(params.glowColor, 0.3 * Math.max(params.edgeGlow, 0.16) * params.exposure));
-    glow.addColorStop(0.4, rgba(params.colorB, 0.07 * params.exposure));
+    glow.addColorStop(0, rgba(params.glowColor, 0.32 * Math.max(params.edgeGlow, 0.18) * params.exposure));
+    glow.addColorStop(0.42, rgba(params.colorB, 0.08 * params.exposure));
     glow.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, width, height);
   }
 
   if (!freeWave) {
+    const rimScale = Math.min(bodyW, bodyH);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.filter = `blur(${Math.max(4, rimScale * 0.05)}px)`;
+    ctx.strokeStyle = rgba(params.highlightColor, 0.42 * layout.glass);
+    ctx.lineWidth = Math.max(3, rimScale * 0.055);
+    bodyPath(ctx, cx, cy, bodyW, bodyH, stadium);
+    ctx.stroke();
+    ctx.filter = `blur(${Math.max(2, rimScale * 0.018)}px)`;
+    ctx.strokeStyle = rgba(params.colorB, 0.28 * layout.glass);
+    ctx.lineWidth = Math.max(1.4, rimScale * 0.02);
+    bodyPath(ctx, cx, cy, bodyW, bodyH, stadium);
+    ctx.stroke();
+    ctx.restore();
+
     ctx.save();
     ctx.globalAlpha = layout.bodyAlpha;
-    roundRectPath(ctx, x, y, bodyW, bodyH, corner);
+    bodyPath(ctx, cx, cy, bodyW, bodyH, stadium);
     ctx.clip();
 
     const base = ctx.createRadialGradient(
       cx,
-      cy - bodyH * 0.2,
-      Math.min(bodyW, bodyH) * 0.06,
+      cy - bodyH * 0.22,
+      Math.min(bodyW, bodyH) * 0.05,
       cx,
       cy,
-      Math.max(bodyW, bodyH) * 0.76,
+      Math.max(bodyW, bodyH) * 0.78,
     );
-    base.addColorStop(0, mix(params.colorA, "#07070e", 0.78 + params.shade * 0.14));
-    base.addColorStop(0.5, mix(params.colorD, "#04040a", 0.84));
-    base.addColorStop(1, "#020206");
+    base.addColorStop(0, mix(params.colorA, "#08080f", 0.82 + params.shade * 0.12));
+    base.addColorStop(0.48, mix(params.colorD, "#04040a", 0.88));
+    base.addColorStop(1, "#010104");
     ctx.fillStyle = base;
-    ctx.fillRect(x - 2, y - 2, bodyW + 4, bodyH + 4);
+    ctx.fillRect(cx - bodyW, cy - bodyH, bodyW * 2, bodyH * 2);
 
-    const innerShade = ctx.createLinearGradient(cx, y, cx, y + bodyH);
-    innerShade.addColorStop(0, "rgba(255,255,255,0.1)");
-    innerShade.addColorStop(0.42, "rgba(0,0,0,0)");
-    innerShade.addColorStop(1, "rgba(0,0,0,0.42)");
+    const innerShade = ctx.createLinearGradient(cx, cy - bodyH / 2, cx, cy + bodyH / 2);
+    innerShade.addColorStop(0, "rgba(255,255,255,0.14)");
+    innerShade.addColorStop(0.4, "rgba(0,0,0,0)");
+    innerShade.addColorStop(1, "rgba(0,0,0,0.48)");
     ctx.fillStyle = innerShade;
-    ctx.fillRect(x, y, bodyW, bodyH);
+    ctx.fillRect(cx - bodyW, cy - bodyH, bodyW * 2, bodyH * 2);
 
-    drawIridescentWave(ctx, cx, waveCy, waveHalf, amp, thickness, phase, params, 0, crossing);
-
-    if (layout.cutout > 0.04) {
-      const cutW = bodyW * (0.28 + 0.14 * layout.cutout);
-      const cutH = Math.max(9, bodyH * (0.12 + 0.1 * layout.cutout));
-      const cutX = cx - cutW / 2;
-      const cutY = y + bodyH * 0.08;
-      ctx.save();
-      ctx.globalCompositeOperation = "destination-out";
-      roundRectPath(ctx, cutX, cutY, cutW, cutH, cutH / 2);
-      ctx.fillStyle = "rgba(0,0,0,1)";
-      ctx.fill();
-      ctx.restore();
-
-      ctx.save();
-      roundRectPath(ctx, cutX, cutY, cutW, cutH, cutH / 2);
-      ctx.fillStyle = "rgba(0,0,0,0.94)";
-      ctx.fill();
-      const lensX = cutX + cutW * 0.78;
-      const lensY = cutY + cutH * 0.5;
-      const lens = ctx.createRadialGradient(lensX, lensY, 0.4, lensX, lensY, cutH * 0.34);
-      lens.addColorStop(0, "rgba(80,100,150,0.6)");
-      lens.addColorStop(0.4, "rgba(24,28,48,0.45)");
-      lens.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = lens;
-      ctx.beginPath();
-      ctx.arc(lensX, lensY, cutH * 0.3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
+    drawIridescentWave(
+      ctx,
+      cx,
+      waveCy,
+      waveHalf,
+      amp,
+      thickness,
+      phase,
+      params,
+      0,
+      crossing,
+      layout.waveSoft,
+    );
     ctx.restore();
 
     if (params.glassEnabled && layout.glass > 0.05) {
       ctx.save();
-      ctx.globalAlpha = layout.glass * params.glassOpacity;
-      roundRectPath(ctx, x, y, bodyW, bodyH, corner);
+      ctx.globalAlpha = layout.glass * Math.max(params.glassOpacity, 0.35);
+      bodyPath(ctx, cx, cy, bodyW, bodyH, stadium);
       ctx.clip();
 
-      if (typeof ctx.createConicGradient === "function" && layout.corner > 0.72) {
+      if (typeof ctx.createConicGradient === "function") {
         const conic = ctx.createConicGradient(-Math.PI * 0.55, cx, cy);
-        conic.addColorStop(0, rgba(params.colorA, 0.28));
-        conic.addColorStop(0.22, rgba(params.colorB, 0.2));
-        conic.addColorStop(0.45, rgba(params.colorC, 0.26));
-        conic.addColorStop(0.7, rgba(params.colorD, 0.2));
-        conic.addColorStop(1, rgba(params.colorA, 0.28));
+        conic.addColorStop(0, rgba(params.colorA, 0.38));
+        conic.addColorStop(0.18, rgba(params.highlightColor, 0.22));
+        conic.addColorStop(0.4, rgba(params.colorB, 0.28));
+        conic.addColorStop(0.62, rgba(params.colorC, 0.24));
+        conic.addColorStop(0.82, rgba(params.colorD, 0.22));
+        conic.addColorStop(1, rgba(params.colorA, 0.38));
         ctx.globalCompositeOperation = "lighter";
         ctx.strokeStyle = conic;
-        ctx.lineWidth = Math.max(1.4, Math.min(bodyW, bodyH) * 0.018);
-        roundRectPath(ctx, x + 1.2, y + 1.2, bodyW - 2.4, bodyH - 2.4, Math.max(0, corner - 1.2));
+        ctx.lineWidth = Math.max(1.6, rimScale * 0.022);
+        bodyPath(ctx, cx, cy, bodyW - 3, bodyH - 3, stadium);
         ctx.stroke();
         ctx.globalCompositeOperation = "source-over";
       }
 
-      const rim = ctx.createLinearGradient(x, y, x + bodyW, y + bodyH);
-      rim.addColorStop(0, rgba(params.sheenColor, 0.22 + params.sheen * 0.14));
-      rim.addColorStop(0.45, "rgba(255,255,255,0)");
-      rim.addColorStop(1, rgba(params.shellEdge, 0.14 + params.shellEdgeAlpha * 0.2));
+      const rim = ctx.createLinearGradient(
+        cx - bodyW * 0.5,
+        cy - bodyH * 0.5,
+        cx + bodyW * 0.5,
+        cy + bodyH * 0.5,
+      );
+      rim.addColorStop(0, rgba(params.sheenColor, 0.28 + params.sheen * 0.16));
+      rim.addColorStop(0.42, "rgba(255,255,255,0)");
+      rim.addColorStop(1, rgba(params.shellEdge, 0.16 + params.shellEdgeAlpha * 0.2));
       ctx.fillStyle = rim;
-      ctx.fillRect(x, y, bodyW, bodyH);
+      ctx.fillRect(cx - bodyW, cy - bodyH, bodyW * 2, bodyH * 2);
 
       ctx.globalCompositeOperation = "lighter";
       const spec = ctx.createRadialGradient(
-        cx - bodyW * 0.22,
-        cy - bodyH * 0.3,
+        cx - bodyW * 0.24,
+        cy - bodyH * 0.32,
         2,
-        cx - bodyW * 0.16,
-        cy - bodyH * 0.22,
-        Math.min(bodyW, bodyH) * 0.44,
+        cx - bodyW * 0.18,
+        cy - bodyH * 0.24,
+        Math.min(bodyW, bodyH) * 0.48,
       );
-      spec.addColorStop(0, rgba(params.sheenColor, 0.55));
-      spec.addColorStop(0.38, rgba(params.specColor, 0.14));
+      spec.addColorStop(0, rgba(params.sheenColor, 0.62));
+      spec.addColorStop(0.36, rgba(params.specColor, 0.16));
       spec.addColorStop(1, "rgba(255,255,255,0)");
       ctx.fillStyle = spec;
       ctx.beginPath();
-      ctx.ellipse(cx - bodyW * 0.16, cy - bodyH * 0.24, bodyW * 0.28, bodyH * 0.2, -0.5, 0, Math.PI * 2);
+      ctx.ellipse(cx - bodyW * 0.18, cy - bodyH * 0.26, bodyW * 0.3, bodyH * 0.22, -0.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
     ctx.save();
-    roundRectPath(ctx, x + 0.7, y + 0.7, bodyW - 1.4, bodyH - 1.4, Math.max(0, corner - 0.7));
-    ctx.strokeStyle = rgba(params.highlightColor, 0.18 + params.sheen * 0.12);
-    ctx.lineWidth = Math.max(1, Math.min(bodyW, bodyH) * (0.008 + params.edgeSoftness * 0.35));
+    ctx.strokeStyle = rgba(params.highlightColor, 0.34 + params.sheen * 0.16);
+    ctx.lineWidth = Math.max(1.2, rimScale * (0.01 + params.edgeSoftness * 0.3));
+    bodyPath(ctx, cx, cy, bodyW - 1.4, bodyH - 1.4, stadium);
     ctx.stroke();
     ctx.restore();
   } else {
@@ -364,6 +388,7 @@ function drawSiriAi(
       params,
       0,
       true,
+      layout.waveSoft,
     );
   }
 }

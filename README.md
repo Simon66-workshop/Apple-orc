@@ -10,7 +10,7 @@ A liquid-glass orb workbench for AI interfaces. Tune a preset, switch between id
 
 ## What you can do
 
-- Explore **14 presets**, including **Siri Ai** — the iOS 27 variable-shape Apple Intelligence orb (sphere / Dynamic Island / wave / capsule).
+- Explore **14 presets**, including **Siri Ai** — the iOS 27 variable-shape Apple Intelligence orb (sphere / ellipsoid / wave / capsule). Idle stays round; thinking gently squashes into an ellipsoid.
 - Tune motion, color, shape and glass parameters.
 - Switch **idle / thinking** and share configurations by URL hash.
 - Embed with **iframe** or reuse the **React source component**. The demo needs no model API key.

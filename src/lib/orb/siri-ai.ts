@@ -1,9 +1,9 @@
-export const siriAiShapeNames = ["sphere", "island", "wave", "capsule"] as const;
+export const siriAiShapeNames = ["sphere", "ellipse", "wave", "capsule"] as const;
 export type SiriAiShapeName = (typeof siriAiShapeNames)[number];
 
 export const siriAiShapeMorph: Record<SiriAiShapeName, number> = {
   sphere: 0,
-  island: 0.34,
+  ellipse: 0.34,
   wave: 0.67,
   capsule: 1,
 };
@@ -11,17 +11,19 @@ export const siriAiShapeMorph: Record<SiriAiShapeName, number> = {
 export const siriAiShapeLabels: Record<"zh" | "en", Record<SiriAiShapeName, string>> = {
   zh: {
     sphere: "圆球",
-    island: "灵动岛",
+    ellipse: "椭圆",
     wave: "波纹",
     capsule: "胶囊",
   },
   en: {
     sphere: "Sphere",
-    island: "Island",
+    ellipse: "Ellipse",
     wave: "Wave",
     capsule: "Capsule",
   },
 };
+
+export type SiriAiSilhouette = "ellipse" | "stadium";
 
 export type SiriAiLayout = {
   shape: SiriAiShapeName;
@@ -31,10 +33,11 @@ export type SiriAiLayout = {
   waveY: number;
   waveAmp: number;
   waveThick: number;
+  waveSoft: number;
   bodyAlpha: number;
   glass: number;
-  cutout: number;
   corner: number;
+  silhouette: number;
 };
 
 const layoutKeys: Array<SiriAiLayout & { morph: number }> = [
@@ -44,51 +47,55 @@ const layoutKeys: Array<SiriAiLayout & { morph: number }> = [
     widthScale: 1,
     heightScale: 1,
     waveY: 0,
-    waveAmp: 0.17,
-    waveThick: 0.12,
+    waveAmp: 0.16,
+    waveThick: 0.11,
+    waveSoft: 0.22,
     bodyAlpha: 1,
     glass: 1,
-    cutout: 0,
     corner: 1,
+    silhouette: 0,
   },
   {
-    shape: "island",
+    shape: "ellipse",
     morph: 0.34,
-    widthScale: 1.26,
-    heightScale: 0.8,
-    waveY: 0.4,
-    waveAmp: 0.13,
-    waveThick: 0.1,
+    widthScale: 1.58,
+    heightScale: 0.86,
+    waveY: 0.32,
+    waveAmp: 0.14,
+    waveThick: 0.12,
+    waveSoft: 0.58,
     bodyAlpha: 1,
     glass: 1,
-    cutout: 0.94,
-    corner: 0.98,
+    corner: 1,
+    silhouette: 0,
   },
   {
     shape: "wave",
     morph: 0.67,
-    widthScale: 2.1,
-    heightScale: 0.46,
+    widthScale: 2.12,
+    heightScale: 0.44,
     waveY: 0,
-    waveAmp: 0.44,
+    waveAmp: 0.46,
     waveThick: 0.18,
+    waveSoft: 0.18,
     bodyAlpha: 0,
     glass: 0,
-    cutout: 0,
     corner: 0.5,
+    silhouette: 0.35,
   },
   {
     shape: "capsule",
     morph: 1,
-    widthScale: 1.92,
-    heightScale: 0.94,
-    waveY: 0.84,
-    waveAmp: 0.065,
-    waveThick: 0.048,
+    widthScale: 1.86,
+    heightScale: 1.02,
+    waveY: 0.48,
+    waveAmp: 0.16,
+    waveThick: 0.12,
+    waveSoft: 0.66,
     bodyAlpha: 1,
-    glass: 0.98,
-    cutout: 0.3,
-    corner: 0.32,
+    glass: 1,
+    corner: 1,
+    silhouette: 1,
   },
 ];
 
@@ -109,7 +116,7 @@ export function siriAiMorphEase(t: number): number {
 
 export function siriAiShapeFromMorph(morph: number): SiriAiShapeName {
   if (morph < 0.17) return "sphere";
-  if (morph < 0.505) return "island";
+  if (morph < 0.505) return "ellipse";
   if (morph < 0.835) return "wave";
   return "capsule";
 }
@@ -138,11 +145,16 @@ export function siriAiLayout(morph: number): SiriAiLayout {
     waveY: lerp(from.waveY, to.waveY, t),
     waveAmp: lerp(from.waveAmp, to.waveAmp, t),
     waveThick: lerp(from.waveThick, to.waveThick, t),
+    waveSoft: lerp(from.waveSoft, to.waveSoft, t),
     bodyAlpha: lerp(from.bodyAlpha, to.bodyAlpha, t),
     glass: lerp(from.glass, to.glass, t),
-    cutout: lerp(from.cutout, to.cutout, t),
     corner: lerp(from.corner, to.corner, t),
+    silhouette: lerp(from.silhouette, to.silhouette, t),
   };
+}
+
+export function siriAiSilhouette(layout: SiriAiLayout): SiriAiSilhouette {
+  return layout.silhouette > 0.5 ? "stadium" : "ellipse";
 }
 
 export function siriAiFrameVars(morph: number): {
