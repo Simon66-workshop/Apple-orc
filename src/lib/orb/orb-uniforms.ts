@@ -1,7 +1,7 @@
 import { type OrbParams, styleFlowIndexes } from "./presets";
 
-export const orbUniformFloatCount = 136;
-export const orbColorOffset = 40;
+export const orbUniformFloatCount = 140;
+export const orbColorOffset = 44;
 export const orbCanvasColorOffset = orbColorOffset + 10 * 4;
 
 const paletteStops = [
@@ -81,6 +81,10 @@ export function writeOrbUniforms(
       params.ribbonBreath,
       params.particleSize,
       params.particleBloom,
+      params.shapeMorph,
+      0,
+      0,
+      0,
     ],
     3,
   );

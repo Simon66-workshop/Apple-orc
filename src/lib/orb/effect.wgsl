@@ -95,6 +95,10 @@ struct Uniforms {
   ribbonBreath:    f32,
   particleSize:    f32,
   particleBloom:   f32,
+  shapeMorph:      f32,
+  _padShape0:      f32,
+  _padShape1:      f32,
+  _padShape2:      f32,
   colorA:         vec4<f32>,
   colorB:         vec4<f32>,
   colorC:         vec4<f32>,
@@ -911,6 +915,7 @@ fn glsPresetFluid(p: vec2<f32>, style: i32, t: f32) -> vec3<f32> {
   if (style == 22) { return glsChromaticMetalFluid(p, t); }
   if (style == 23) { return glsRefractiveBlobFluid(p, t); }
   if (style == 24) { return glsParticleRibbonFluid(p, t); }
+  if (style == 25) { return glsSiriFluid(p, t); }
   return glsFrostFluid(p, t);
 }
 
@@ -1022,6 +1027,43 @@ fn glsHighlightLobe(normal: vec2<f32>, direction: vec2<f32>, cut: f32,
   return pow(angular, power);
 }
 
+fn glsSdRoundBox(p: vec2<f32>, halfSize: vec2<f32>, r: f32) -> f32 {
+  let q = abs(p) - halfSize + vec2<f32>(r);
+  return length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0) - r;
+}
+
+fn glsSiriAiSd(uv: vec2<f32>, rad: f32, morph: f32, t: f32) -> f32 {
+  let m = clamp(morph, 0.0, 1.0);
+  let sphere = length(uv) - rad;
+  let island = glsSdRoundBox(uv, vec2<f32>(rad * 1.18, rad * 0.74), rad * 0.72);
+  let drift = t * 2.2;
+  let env = pow(max(1.0 - abs(uv.x) / (rad * 1.85), 0.0), 1.45);
+  let waveY = (sin(uv.x * 2.2 / rad + drift) * 0.22
+             + sin(uv.x * 4.1 / rad - drift * 0.62) * 0.07) * rad * env;
+  let wave = max(abs(uv.y - waveY) - rad * 0.13 * (0.48 + env), abs(uv.x) - rad * 1.78);
+  let capsule = glsSdRoundBox(uv, vec2<f32>(rad * 1.78, rad * 0.86), rad * 0.36);
+  if (m < 0.34) {
+    return mix(sphere, island, smoothstep(0.0, 0.34, m));
+  }
+  if (m < 0.67) {
+    return mix(island, wave, smoothstep(0.34, 0.67, m));
+  }
+  return mix(wave, capsule, smoothstep(0.67, 1.0, m));
+}
+
+fn glsSiriAiFluidP(uv: vec2<f32>, rad: f32, morph: f32) -> vec2<f32> {
+  let m = clamp(morph, 0.0, 1.0);
+  var shift = 0.0;
+  if (m < 0.34) {
+    shift = mix(0.0, 0.32, smoothstep(0.0, 0.34, m));
+  } else if (m < 0.67) {
+    shift = mix(0.32, 0.0, smoothstep(0.34, 0.67, m));
+  } else {
+    shift = mix(0.0, 0.72, smoothstep(0.67, 1.0, m));
+  }
+  return vec2<f32>(uv.x / max(rad, 0.001), uv.y / max(rad, 0.001) + shift);
+}
+
 fn glsContourWave(angle: f32, t: f32) -> vec2<f32> {
   let style = i32(u.style + 0.5);
   if (style == 19) {
@@ -1081,39 +1123,29 @@ fn orbGlassLiquidAnim(uv01: vec2<f32>) -> vec4<f32> {
   let rad = max(u.radius, 0.05);
   let t = u.time * u.speed;
   let s = i32(u.style + 0.5);
-  let emissionOnly = u.glassEnabled <= 0.5 && (s == 9 || s == 14 || s == 24);
+  let siriAi = s == 25;
+  let emissionOnly = u.glassEnabled <= 0.5 && (s == 9 || s == 14 || s == 24
+                    || (siriAi && u.shapeMorph > 0.5 && u.shapeMorph < 0.84));
   let contourRad = rad * glsContourScale(uv, t, u.contourDeform);
+  let siriSd = glsSiriAiSd(uv, rad, u.shapeMorph, t);
+  let outside = select(
+    length(uv) - contourRad * (1.01 + mfEdgeD(u.edgeSoftness)),
+    siriSd - rad * (0.02 + mfEdgeD(u.edgeSoftness)),
+    siriAi,
+  );
 
-  // Nothing on this pixel — and here that is the whole fluid and the whole
-  // shell skipped, over roughly 60% of the quad. 1.01 is the far edge of the
-  // ball's own coverage, `1 - smoothstep(0.99, 1.01, pd)` on the last line of
-  // this function, which is EXACTLY zero past it, so the full path already
-  // returns opaque black here. An early-out, not a clip: the number is that
-  // coverage term's own far edge, so do not "tidy" it to 1.0 — that would
-  // shave the outer half of the limb's antialiasing.
-  //
-  // Tested on `uv` rather than on `pd` because `|uv| > rad * 1.01` IS
-  // `pd > 1.01`, and it keeps `p` and `pd` in the same basic block as
-  // everything that reads them — the shape the four sibling orbs of this port
-  // need, where branching on `d` after computing it makes the compiler stop
-  // folding `uv / rad` into its uses and the moved last bit comes back through
-  // their grain hash as speckle up to 34/255. Glass Liquid has no grain and is
-  // nearly immune either way: at 1024x1024 this costs under a dozen bytes of a
-  // four-million-byte frame, off by 1/255. Those are the branch existing, not a
-  // pixel wrongly skipped — a copy of this guard with a threshold it can never
-  // reach diffs identically, and against it the guard is exactly 0/255.
-  if (length(uv) > contourRad * (1.01 + mfEdgeD(u.edgeSoftness))) {
-    // Off the ball entirely — but the halo lives out here, so hand back
-    // what the edge bank paints on nothing. Exactly black at Glow 0.
-    let halo = clamp(mfEdgeGlow(vec3<f32>(0.0), uv, vec2<f32>(0.0), contourRad,
+  if (outside > 0.0) {
+    let haloRad = select(contourRad, rad, siriAi);
+    let haloUv = select(uv, normalize(uv + vec2<f32>(0.0001, 0.0)) * (haloRad + max(siriSd, 0.0)), siriAi);
+    let halo = clamp(mfEdgeGlow(vec3<f32>(0.0), haloUv, vec2<f32>(0.0), haloRad,
                                 u.edgeSoftness, u.edgeGlow, u.glowColor.rgb),
                      vec3<f32>(0.0), vec3<f32>(1.0));
     let haloAlpha = max(halo.r, max(halo.g, halo.b));
     return vec4<f32>(halo, haloAlpha);
   }
 
-  let p   = uv / contourRad;     // deformed ball space: |p| == 1 on the edge
-  let pd  = length(p);
+  let p   = select(uv / contourRad, glsSiriAiFluidP(uv, rad, u.shapeMorph), siriAi);
+  let pd  = select(length(p), clamp(1.0 + siriSd / max(rad, 0.001), 0.0, 1.6), siriAi);
 
   // ---- the fluid ------------------------------------------------------
   let fu = p / GL_FU;

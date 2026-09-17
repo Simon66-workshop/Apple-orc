@@ -1,4 +1,5 @@
 export type StyleName =
+  | "siriAi"
   | "siri"
   | "voiceWave"
   | "spectrum"
@@ -37,6 +38,7 @@ export type OrbParams = {
   ribbonBreath: number;
   particleSize: number;
   particleBloom: number;
+  shapeMorph: number;
   zoom: number;
   warp: number;
   ridgeAmt: number;
@@ -94,6 +96,7 @@ const basePreset: StylePreset = {
   ribbonBreath: 0.3,
   particleSize: 1.2,
   particleBloom: 0.7,
+  shapeMorph: 0,
   zoom: 0.3,
   warp: 3,
   ridgeAmt: 0.5,
@@ -122,6 +125,38 @@ const basePreset: StylePreset = {
 };
 
 export const stylePresets: Record<StyleName, StylePreset> = {
+  siriAi: {
+    ...basePreset,
+    speed: 0.94,
+    radius: 0.82,
+    contourDeform: 0.05,
+    shapeMorph: 0.34,
+    zoom: 0.32,
+    warp: 2.7,
+    ridgeAmt: 0.6,
+    sharp: 2.05,
+    shade: 0.08,
+    sheen: 0.36,
+    gloss: 0.32,
+    glassOpacity: 0.55,
+    shellMidAlpha: 0.18,
+    shellEdgeAlpha: 0.22,
+    exposure: 1.92,
+    edgeSoftness: 0.016,
+    edgeGlow: 0.26,
+    colorA: "#FFD56A",
+    colorB: "#4EFFF6",
+    colorC: "#FF5EC8",
+    colorD: "#6B6CFF",
+    highlightColor: "#FFFFFF",
+    shellInner: "#F7FBFF",
+    shellMid: "#9BF4FF",
+    shellEdge: "#C5A9FF",
+    sheenColor: "#F4FBFF",
+    specColor: "#E7F3FF",
+    canvasColor: "#010207",
+    glowColor: "#8A74FF",
+  },
   siri: {
     ...basePreset,
     speed: 0.82,
@@ -458,6 +493,7 @@ export const stylePresets: Record<StyleName, StylePreset> = {
 };
 
 export const styleNames: readonly StyleName[] = [
+  "siriAi",
   "siri",
   "voiceWave",
   "particleRibbon",
@@ -474,6 +510,7 @@ export const styleNames: readonly StyleName[] = [
 ];
 
 export const styleFlowIndexes: Record<StyleName, number> = {
+  siriAi: 25,
   siri: 9,
   voiceWave: 19,
   aurora: 10,

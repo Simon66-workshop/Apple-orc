@@ -185,6 +185,13 @@
   transform-origin: center;
   justify-self: center;
   align-self: center;
+  display: grid;
+  place-items: center;
+}
+
+.orc-preview.is-siri-ai {
+  width: min(78vmin, 640px);
+  height: min(58vmin, 480px);
 }
 
 .orc-fallback-note {
@@ -201,6 +208,10 @@
   height: auto;
 }
 
+.orc-preview.is-scene.is-siri-ai {
+  width: min(92%, 380px);
+}
+
 .orc-orb-frame,
 .orc-widget,
 .orc-scene-pill-orb,
@@ -212,6 +223,21 @@
 
 .orc-orb-frame {
   filter: drop-shadow(0 24px 48px rgb(0 0 0 / 0.45));
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.orc-preview.is-siri-ai .orc-orb-frame {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 16px 36px rgb(0 0 0 / 0.5));
+}
+
+.orc-preview.is-siri-wave .orc-orb-frame {
+  overflow: visible;
+  filter: drop-shadow(0 12px 32px rgb(80 60 180 / 0.32));
 }
 
 .orc-canvas {
@@ -267,6 +293,19 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 16rem;
+}
+
+.orc-scene-pill.is-siri-ai {
+  padding: 6px 20px 6px 6px;
+  gap: 12px;
+}
+
+.orc-scene-pill.is-siri-ai .orc-scene-pill-orb {
+  width: 108px;
+  height: 58px;
+  flex: 0 0 108px;
+  border-radius: 999px;
+  overflow: hidden;
 }
 
 
@@ -460,14 +499,15 @@
 .orc-segment {
   flex: 1;
   height: 36px;
-  min-width: 44px;
-  padding: 0 12px;
+  min-width: 0;
+  padding: 0 8px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: rgb(255 255 255 / 0.62);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .orc-segment.is-active {
@@ -693,6 +733,11 @@
     height: min(52vw, 240px);
   }
 
+  .orc-preview.is-siri-ai {
+    width: min(88vw, 340px);
+    height: min(42vw, 200px);
+  }
+
   .orc-sheet-actions {
     flex-direction: column;
     align-items: stretch;
@@ -703,7 +748,8 @@
   .orc-section-chevron,
   .orc-switch-knob,
   .glass-sheen,
-  .cta-gradient {
+  .cta-gradient,
+  .orc-orb-frame {
     animation: none !important;
     transition: none !important;
   }

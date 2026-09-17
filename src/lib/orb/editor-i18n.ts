@@ -27,6 +27,7 @@ export const localeOptions = [
 
 export const styleLabels: Record<Locale, Record<StyleName, string>> = {
   zh: {
+    siriAi: "Siri Ai",
     siri: "Siri 波澜",
     voiceWave: "声纹薄膜",
     spectrum: "彩色声场",
@@ -42,6 +43,7 @@ export const styleLabels: Record<Locale, Record<StyleName, string>> = {
     chromaticMetal: "色差液态金属",
   },
   en: {
+    siriAi: "Siri Ai",
     siri: "Siri Wave",
     voiceWave: "Voice Membrane",
     spectrum: "Prismatic Field",
@@ -62,6 +64,7 @@ export const numericLabels: Record<Locale, Record<NumericKey, string>> = {
   zh: {
     speed: "速度",
     radius: "半径",
+    shapeMorph: "形态",
     contourDeform: "轮廓形变",
     zoom: "缩放",
     warp: "扭曲",
@@ -98,6 +101,7 @@ export const numericLabels: Record<Locale, Record<NumericKey, string>> = {
   en: {
     speed: "Speed",
     radius: "Radius",
+    shapeMorph: "Shape Morph",
     contourDeform: "Contour Motion",
     zoom: "Flow Scale",
     warp: "Flow Distortion",
@@ -213,8 +217,10 @@ export const uiCopy = {
     motionSection: "动态",
     colorsSection: "颜色",
     shapeSection: "形状动画",
-    glassSection: "玻璃罩",
+    siriShapeSection: "Siri 形态",
+    switchSiriShape: "切换 Siri Ai 形态",
     enableGlass: "开启玻璃罩",
+    glassSection: "玻璃罩",
     edgeSection: "边缘与外发光",
     copyFailed: "复制失败",
     copied: "已复制",
@@ -270,8 +276,10 @@ export const uiCopy = {
     motionSection: "Motion",
     colorsSection: "Color",
     shapeSection: "Shape Motion",
-    glassSection: "Glass Shell",
+    siriShapeSection: "Siri Shape",
+    switchSiriShape: "Switch Siri Ai shape",
     enableGlass: "Enable Glass Shell",
+    glassSection: "Glass Shell",
     edgeSection: "Edge & Glow",
     copyFailed: "Copy Failed",
     copied: "Copied",

@@ -10,7 +10,8 @@ A liquid-glass orb workbench for AI interfaces. Tune a preset, switch between id
 
 ## What you can do
 
-- Explore **13 presets** and tune motion, color, shape and glass parameters.
+- Explore **14 presets**, including **Siri Ai** — the iOS 27 variable-shape Apple Intelligence orb (sphere / Dynamic Island / wave / capsule).
+- Tune motion, color, shape and glass parameters.
 - Switch **idle / thinking** and share configurations by URL hash.
 - Embed with **iframe** or reuse the **React source component**. The demo needs no model API key.
 - Use WebGPU with an approximate Canvas2D fallback. Workbench controls support English and Chinese.
@@ -39,12 +40,14 @@ Playwright captures of the production build, not generated mockups. The animatio
 
 The [iframe lab](https://simon66-workshop.github.io/Apple-orc/showcase.html?view=embed) demonstrates `setState`, `setText` and `ping → pong`. Parent-window, origin and payload checks are enforced. With suppressed referrers, set `parentOrigin` explicitly; see the [guide](docs/INTEGRATION.md).
 
+Siri Ai also accepts `shapeMorph` (0 sphere → 0.34 island → 0.67 wave → 1 capsule) on the share hash and JSON export.
+
 ## React source component
 
 ```tsx
 import { AppleOrc } from '@/lib/orb';
 
-<AppleOrc preset="siri" state="thinking" size={72} label="Thinking..." />
+<AppleOrc preset="siriAi" state="thinking" size={72} label="Thinking..." />
 ```
 
 This import works inside the repository. It is **not a published npm package**. The guide explains the source files, styles, aliases and dependencies needed in another project. The `private` field in `package.json` prevents accidental npm publishing; the GitHub repository is public.
@@ -74,7 +77,7 @@ Tried it in a real interface? An integration example, reproducible browser bug o
 
 **不只是看效果，调好以后，把这个球放进你自己的网页。**
 
-13 套液态玻璃预设，可调颜色、运动与玻璃效果，支持 idle / thinking 状态，以及 React 源码引用、iframe 嵌入。
+14 套液态玻璃预设（含 **Siri Ai**：iOS 27 可变形态，圆球 / 灵动岛 / 波纹 / 胶囊），可调颜色、运动与玻璃效果，支持 idle / thinking 状态，以及 React 源码引用、iframe 嵌入。
 
 先试[在线工作台](https://simon66-workshop.github.io/Apple-orc/)或[实际接入示例](https://simon66-workshop.github.io/Apple-orc/showcase.html)。预设页只实时渲染当前选中的球，其余是仓库自带缩略图；iframe 页可查看真实消息回执。
 

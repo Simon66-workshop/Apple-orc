@@ -52,6 +52,10 @@ struct Uniforms {
     float ribbonBreath;
     float particleSize;
     float particleBloom;
+    float shapeMorph;
+    float _padShape0;
+    float _padShape1;
+    float _padShape2;
     metal::float4 colorA;
     metal::float4 colorB;
     metal::float4 colorC;
@@ -1276,6 +1280,10 @@ metal::float3 glsPresetFluid(
     }
     if (style == 24) {
         return glsParticleRibbonFluid(p_16, t_13, u);
+    }
+    if (style == 25) {
+        metal::float3 _eSiriAi = glsSiriFluid(p_16, t_13, u);
+        return _eSiriAi;
     }
     metal::float3 _e27 = glsFrostFluid(p_16, t_13, u);
     return _e27;

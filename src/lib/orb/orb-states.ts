@@ -76,6 +76,22 @@ type IdleStyleProfile = {
 };
 
 const idleProfilesByStyle: Record<StyleName, IdleStyleProfile> = {
+  siriAi: {
+    numeric: {
+      speed: { scale: 0.42 },
+      contourDeform: { scale: 0.32 },
+      zoom: { scale: 0.95 },
+      warp: { scale: 0.55 },
+      ridgeAmt: { scale: 0.58 },
+      sharp: { scale: 0.92 },
+      exposure: { scale: 0.74 },
+      edgeGlow: { scale: 0.52 },
+    },
+    colors: {
+      colorA: "#B8A56C", colorB: "#4E8A8A", colorC: "#9A648A",
+      colorD: "#5E5888", highlightColor: "#C9D4DE", glowColor: "#5E5878",
+    },
+  },
   siri: {
     numeric: {
       speed: { scale: 0.3 },

@@ -35,4 +35,12 @@ export {
   type OrbStateConfiguration,
   type OrbRenderTarget,
 } from "./orb-states";
+export {
+  siriAiShapeNames,
+  siriAiShapeMorph,
+  siriAiShapeFromMorph,
+  siriAiLayout,
+  siriAiMorphEase,
+  type SiriAiShapeName,
+} from "./siri-ai";
 export { buildShareHash, readEditorStateFromHash, type OrbEditorState } from "./hash";

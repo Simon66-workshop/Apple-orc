@@ -54,6 +54,13 @@ import {
 } from "@/lib/orb/orb-states";
 import { effectDefaults, styleNames, type OrbParams, type StyleName } from "@/lib/orb/presets";
 import { extraCopy } from "@/lib/orb/workbench-copy";
+import {
+  siriAiMorphEase,
+  siriAiShapeFromMorph,
+  siriAiShapeLabels,
+  siriAiShapeMorph,
+  siriAiShapeNames,
+} from "@/lib/orb/siri-ai";
 import { cn } from "@/lib/utils";
 
 const glassColors: ColorKey[] = ["shellInner", "shellMid", "shellEdge", "sheenColor", "specColor"];
@@ -77,24 +84,31 @@ export function Workbench() {
     state: true,
     motion: true,
     colors: false,
-    shape: false,
+    shape: true,
     glass: true,
     edge: true,
   });
+  const morphRaf = useRef(0);
+  const liveMorphRef = useRef<number | null>(null);
+  const morphUiAt = useRef(0);
   const stageRef = useRef<HTMLElement | null>(null);
   const copy = uiCopy[locale];
   const extra = extraCopy[locale];
 
   const params = resolveOrbStateParams(editorState.configuration, editorState.activeState);
+  const liveParams =
+    liveMorphRef.current !== null && params.style === "siriAi"
+      ? { ...params, shapeMorph: liveMorphRef.current }
+      : params;
   const targetRef = useRef({
     state: editorState.activeState,
-    params,
+    params: liveParams,
     activationDuration: editorState.configuration.activationDuration,
     transitionDuration: editorState.configuration.transitionDuration,
   });
   targetRef.current = {
     state: editorState.activeState,
-    params,
+    params: liveParams,
     activationDuration: editorState.configuration.activationDuration,
     transitionDuration: editorState.configuration.transitionDuration,
   };
@@ -104,6 +118,10 @@ export function Workbench() {
     setEditorState(readEditorStateFromHash());
     setPreviewMode(readPreviewModeFromHash());
     setSceneText(readSceneTextFromHash());
+  }, []);
+
+  useEffect(() => {
+    return () => cancelAnimationFrame(morphRaf.current);
   }, []);
 
   useEffect(() => {
@@ -143,6 +161,8 @@ export function Workbench() {
   }, []);
 
   const applyStyle = useCallback((style: StyleName) => {
+    liveMorphRef.current = null;
+    cancelAnimationFrame(morphRaf.current);
     setEditorState((current) => ({
       activeState: current.activeState,
       configuration: {
@@ -151,7 +171,45 @@ export function Workbench() {
         transitionDuration: current.configuration.transitionDuration,
       },
     }));
+    if (style === "siriAi") {
+      setOpenSections((current) => ({ ...current, shape: true }));
+    }
   }, []);
+
+  const setShapeMorph = useCallback((value: number, animate: boolean) => {
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!animate || reduceMotion) {
+      liveMorphRef.current = null;
+      setParam("shapeMorph", value);
+      return;
+    }
+    const from = liveMorphRef.current ?? targetRef.current.params.shapeMorph;
+    const t0 = performance.now();
+    const duration = 780;
+    cancelAnimationFrame(morphRaf.current);
+    const tick = (now: number) => {
+      const u = Math.min(1, Math.max(0, (now - t0) / duration));
+      const next = from + (value - from) * siriAiMorphEase(u);
+      liveMorphRef.current = next;
+      targetRef.current = {
+        ...targetRef.current,
+        params: { ...targetRef.current.params, shapeMorph: next },
+      };
+      if (u < 1) {
+        if (now - morphUiAt.current > 48) {
+          morphUiAt.current = now;
+          setParam("shapeMorph", next);
+        }
+        morphRaf.current = requestAnimationFrame(tick);
+      } else {
+        liveMorphRef.current = null;
+        setParam("shapeMorph", value);
+      }
+    };
+    morphRaf.current = requestAnimationFrame(tick);
+  }, [setParam]);
 
   const resetAll = useCallback(() => {
     setEditorState({
@@ -212,6 +270,8 @@ export function Workbench() {
       />
     );
   }
+
+  const siriShape = params.style === "siriAi" ? siriAiShapeFromMorph(liveParams.shapeMorph) : null;
 
   const toggleSection = (key: string) => () => {
     setOpenSections((current) => ({ ...current, [key]: !current[key] }));
@@ -277,11 +337,16 @@ export function Workbench() {
         </div>
 
         <div
-          className={cn("orc-preview", previewMode === "scene" && "is-scene")}
+          className={cn(
+            "orc-preview",
+            previewMode === "scene" && "is-scene",
+            params.style === "siriAi" && "is-siri-ai",
+            siriShape && `is-siri-${siriShape}`,
+          )}
           style={{ transform: `scale(${previewScale})` }}
         >
           {previewMode === "scene" ? (
-            <div className="orc-scene-pill">
+            <div className={cn("orc-scene-pill", params.style === "siriAi" && "is-siri-ai")}>
               <div className="orc-scene-pill-orb">
                 <OrbCanvas
                   getTarget={() => targetRef.current}
@@ -422,10 +487,24 @@ export function Workbench() {
             </GlassSection>
 
             <GlassSection
-              title={copy.shapeSection}
+              title={params.style === "siriAi" ? copy.siriShapeSection : copy.shapeSection}
               open={openSections.shape}
               onToggle={toggleSection("shape")}
             >
+              {params.style === "siriAi" ? (
+                <>
+                  <Segmented
+                    ariaLabel={copy.switchSiriShape}
+                    value={siriAiShapeFromMorph(liveParams.shapeMorph)}
+                    options={siriAiShapeNames.map((name) => ({
+                      label: siriAiShapeLabels[locale][name],
+                      value: name,
+                    }))}
+                    onChange={(value) => setShapeMorph(siriAiShapeMorph[value], true)}
+                  />
+                  {slider("shapeMorph")}
+                </>
+              ) : null}
               {slider("radius")}
               {slider("contourDeform")}
               {slider("zoom")}
